@@ -524,14 +524,24 @@
 
         #gps-error {
             display: none;
-            background: #fee2e2;
-            border: 1px solid #fecaca;
+            background: #fff8e1;
+            border: 1px solid #fde68a;
+            border-left: 4px solid #f59e0b;
             border-radius: var(--radius-sm);
-            padding: 12px 14px;
-            margin-top: 12px;
-            font-size: 0.8rem;
-            color: #991b1b;
-            line-height: 1.5;
+            padding: 16px 18px;
+            margin-top: 14px;
+            font-size: 0.82rem;
+            color: #78350f;
+            line-height: 1.7;
+        }
+
+        #gps-error strong {
+            color: #92400e;
+        }
+
+        #gps-error em {
+            color: #a16207;
+            font-style: italic;
         }
 
         /* ─────────────────────────────────────────────────────────── */
@@ -946,17 +956,47 @@
         function onGpsError(err) {
             document.getElementById('gps-status').innerHTML = '';
             document.getElementById('gps-share-btn').disabled = false;
+
+            // Detect device type for tailored instructions
+            const ua = navigator.userAgent || '';
+            const isIphone = /iphone|ipad|ipod/i.test(ua);
+            const isAndroid = /android/i.test(ua);
+
             let msg = '';
-            switch (err.code) {
-                case err.PERMISSION_DENIED:
-                    msg = '⚠️ Location access denied. Go to your phone Settings → Safari/Chrome → Location, allow access, then try again.'; break;
-                case err.POSITION_UNAVAILABLE:
-                    msg = '⚠️ Location unavailable. Make sure Location Services is on in your phone settings.'; break;
-                case err.TIMEOUT:
-                    msg = '⚠️ Location request timed out. Move to an area with better signal and try again.'; break;
-                default:
-                    msg = '⚠️ Could not get location. Refresh the page and try again.';
+
+            if (err.code === err.PERMISSION_DENIED || err.code === err.POSITION_UNAVAILABLE) {
+                if (isIphone) {
+                    msg = `<strong>📍 Location blocked on iPhone — here's how to fix it:</strong><br><br>
+<strong>Step 1:</strong> Close this page and open your iPhone <strong>Settings</strong> app (the gray gear icon).<br>
+<strong>Step 2:</strong> Scroll down and tap <strong>Privacy & Security</strong>.<br>
+<strong>Step 3:</strong> Tap <strong>Location Services</strong> — make sure it's toggled <strong>ON</strong> (green).<br>
+<strong>Step 4:</strong> Scroll down to find <strong>Safari</strong> (or Chrome if that's your browser) → tap it → select <strong>"While Using the App"</strong>.<br>
+<strong>Step 5:</strong> Come back to this page and tap <strong>Share My Location</strong> again.<br><br>
+<em>Still not working? Make sure you're using Safari or Chrome — other browsers may not support location sharing.</em>`;
+                } else if (isAndroid) {
+                    msg = `<strong>📍 Location blocked on Android — here's how to fix it:</strong><br><br>
+<strong>Step 1:</strong> Tap the <strong>three dots</strong> (⋮) in the top-right corner of your browser.<br>
+<strong>Step 2:</strong> Tap <strong>Settings</strong> → <strong>Site Settings</strong> → <strong>Location</strong>.<br>
+<strong>Step 3:</strong> Make sure Location is set to <strong>Ask or Allow</strong> (not Blocked).<br>
+<strong>Step 4:</strong> Go back to this page and tap <strong>Share My Location</strong> again — when the pop-up appears, tap <strong>Allow</strong>.<br><br>
+<em>Also check: swipe down from the top of your screen and make sure the <strong>Location</strong> icon (looks like a pin 📍) is turned on.</em>`;
+                } else {
+                    msg = `<strong>📍 Location access is blocked — here's how to fix it:</strong><br><br>
+<strong>On iPhone:</strong> Settings → Privacy & Security → Location Services → ON → find Safari or Chrome → "While Using"<br><br>
+<strong>On Android:</strong> Tap ⋮ in your browser → Settings → Site Settings → Location → Allow, then tap Allow on the pop-up.<br><br>
+<strong>On a computer:</strong> Location on a desktop is often inaccurate. If possible, open this link on your <strong>phone</strong> for best results. If you must use a computer, click the 🔒 lock icon in your browser address bar → Location → Allow.`;
+                }
+            } else if (err.code === err.TIMEOUT) {
+                msg = `⚠️ <strong>Location timed out.</strong> This usually means you're indoors or have a weak signal.<br><br>
+Try these steps:<br>
+1. Step <strong>outside</strong> or move near a window.<br>
+2. Make sure your phone's <strong>Location / GPS</strong> is turned on (swipe down from top of screen to check).<br>
+3. Tap <strong>Share My Location</strong> again.`;
+            } else {
+                msg = `⚠️ <strong>Could not get your location.</strong><br><br>
+Try refreshing the page and tapping <strong>Share My Location</strong> again. If the problem continues, open this link on your <strong>phone</strong> (not a computer) with Location Services turned on.`;
             }
+
             showGpsError(msg);
         }
 
