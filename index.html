@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="description" content="Knockout Inspections – Join your live virtual inspection call." />
+    <title>Knockout Inspections – Live Virtual Inspection</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+
+    <style>
+        /* ─────────────────────────────────────────────────────────── */
+        /* 1. CONFIG — edit these two values only                      */
+        /* ─────────────────────────────────────────────────────────── */
+        /* MEETING_LINK and business hours are set in the JS below.    */
+
+        /* ─────────────────────────────────────────────────────────── */
+        /* 2. RESET & TOKENS                                           */
+        /* ─────────────────────────────────────────────────────────── */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --red: #bd1e2e;
+            --red-dark: #8b1520;
+            --blue: #292458;
+            --blue-mid: #1a1540;
+            --green: #095731;
+            --green-glow: rgba(9, 87, 49, 0.25);
+            --slate: #64748b;
+            --light: #f1f5f9;
+            --white: #ffffff;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+        }
+
+        html,
+        body {
+            height: 100%;
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #0d1117;
+            color: var(--white);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background: radial-gradient(ellipse at top left, #1a1a3e 0%, #0d1117 55%),
+                radial-gradient(ellipse at bottom right, #1a0d0f 0%, transparent 60%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0 16px 48px;
+        }
+
+        /* ─────────────────────────────────────────────────────────── */
+        /* 3. TOP BRAND BAR                                            */
+        /* ─────────────────────────────────────────────────────────── */
+        .brand-bar {
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 20px 0 0;
+            margin-bottom: 24px;
+        }
+
+        .brand-shield {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--red) 0%, var(--red-dark) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 16px rgba(189, 30, 46, 0.4);
+            flex-shrink: 0;
+        }
+
+        .brand-shield svg {
+            width: 22px;
+            height: 22px;
+            fill: white;
+        }
+
+        .brand-text h1 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: white;
+            letter-spacing: -0.01em;
+            line-height: 1.2;
+        }
+
+        .brand-text p {
+            font-size: 0.72rem;
+            color: rgba(255, 255, 255, 0.45);
+            font-weight: 400;
+            margin-top: 1px;
+        }
+
+        /* ─────────────────────────────────────────────────────────── */
+        /* 4. HERO SECTION                                             */
+        /* ─────────────────────────────────────────────────────────── */
+        .hero {
+            width: 100%;
+            max-width: 480px;
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .hours-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            margin-bottom: 18px;
+            transition: all 0.3s;
+        }
+
+        .hours-badge.open {
+            background: rgba(9, 87, 49, 0.25);
+            border: 1px solid rgba(74, 222, 128, 0.3);
+            color: #4ade80;
+        }
+
+        .hours-badge.closed {
+            background: rgba(100, 116, 139, 0.2);
+            border: 1px solid rgba(100, 116, 139, 0.3);
+            color: rgba(255, 255, 255, 0.45);
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .open .pulse-dot {
+            background: #4ade80;
+            box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.6);
+            animation: pulse 1.8s ease-in-out infinite;
+        }
+
+        .closed .pulse-dot {
+            background: rgba(100, 116, 139, 0.6);
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.6);
+            }
+
+            70% {
+                box-shadow: 0 0 0 8px rgba(74, 222, 128, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(74, 222, 128, 0);
+            }
+        }
+
+        .hero h2 {
+            font-size: 1.75rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1.15;
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .hero h2 span {
+            color: var(--red);
+        }
+
+        .hero p {
+            font-size: 0.88rem;
+            color: rgba(255, 255, 255, 0.55);
+            line-height: 1.65;
+            max-width: 340px;
+            margin: 0 auto;
+        }
+
+        /* ─────────────────────────────────────────────────────────── */
+        /* 5. CARD SHELL                                               */
+        /* ─────────────────────────────────────────────────────────── */
+        .card {
+            width: 100%;
+            max-width: 480px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-lg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 18px 20px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .step-num {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.72rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .step-primary {
+            background: var(--red);
+            color: white;
+        }
+
+        .step-secondary {
+            background: rgba(41, 36, 88, 0.7);
+            color: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .step-done {
+            background: rgba(9, 87, 49, 0.5);
+            color: #4ade80;
+        }
+
+        .card-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .card-subtitle {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 1px;
+        }
+
+        .card-body {
+            padding: 18px 20px 20px;
+        }
+
+        /* ─────────────────────────────────────────────────────────── */
+        /* 6. JOIN CALL BUTTON                                         */
+        /* ─────────────────────────────────────────────────────────── */
+        #join-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 17px;
+            border-radius: var(--radius-md);
+            border: none;
+            text-decoration: none;
+            background: linear-gradient(135deg, var(--red) 0%, var(--red-dark) 100%);
+            color: white;
+            font-family: inherit;
+            font-size: 1.05rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            cursor: pointer;
+            box-shadow: 0 6px 24px rgba(189, 30, 46, 0.4), 0 2px 6px rgba(0, 0, 0, 0.3);
+            transition: transform 0.15s, box-shadow 0.15s, opacity 0.2s;
+        }
+
+        #join-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(189, 30, 46, 0.5);
+        }
+
+        #join-btn:active {
+            transform: translateY(0);
+        }
+
+        #join-btn.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        #join-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .call-note {
+            margin-top: 12px;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.35);
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .call-note strong {
+            color: rgba(255, 255, 255, 0.55);
+            font-weight: 500;
+        }
+
+        /* ─────────────────────────────────────────────────────────── */
+        /* 7. GPS SECTION                                              */
+        /* ─────────────────────────────────────────────────────────── */
+        #gps-share-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            width: 100%;
+            padding: 15px;
+            border-radius: var(--radius-md);
+            border: none;
+            background: linear-gradient(135deg, var(--blue) 0%, var(--blue-mid) 100%);
+            color: white;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 18px rgba(41, 36, 88, 0.5);
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+
+        #gps-share-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 22px rgba(41, 36, 88, 0.6);
+        }
+
+        #gps-share-btn:active {
+            transform: translateY(0);
+        }
+
+        #gps-share-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #gps-share-btn svg {
+            width: 19px;
+            height: 19px;
+            fill: white;
+        }
+
+        #gps-status {
+            text-align: center;
+            font-size: 0.82rem;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 12px;
+            min-height: 18px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            vertical-align: middle;
+            margin-right: 5px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* GPS result block */
+        #gps-result {
+            display: none;
+            margin-top: 16px;
+        }
+
+        .coords-box {
+            background: rgba(9, 87, 49, 0.15);
+            border: 1px solid rgba(9, 87, 49, 0.4);
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
+            margin-bottom: 14px;
+        }
+
+        .coords-label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.35);
+            margin-bottom: 10px;
+        }
+
+        .coord-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .coord-row:last-of-type {
+            border-bottom: none;
+        }
+
+        .coord-key {
+            font-size: 0.78rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .coord-val {
+            font-size: 0.85rem;
+            font-weight: 600;
+            font-feature-settings: "tnum";
+        }
+
+        .accuracy-badge {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.68rem;
+            font-weight: 600;
+        }
+
+        .acc-good {
+            background: rgba(9, 87, 49, 0.35);
+            color: #4ade80;
+            border: 1px solid rgba(74, 222, 128, 0.25);
+        }
+
+        .acc-ok {
+            background: rgba(202, 138, 4, 0.25);
+            color: #fbbf24;
+            border: 1px solid rgba(251, 191, 36, 0.25);
+        }
+
+        .acc-poor {
+            background: rgba(189, 30, 46, 0.25);
+            color: #f87171;
+            border: 1px solid rgba(248, 113, 113, 0.25);
+        }
+
+        .map-btns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .map-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 11px;
+            border-radius: var(--radius-sm);
+            border: none;
+            font-family: inherit;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+
+        .map-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .map-btn-google {
+            background: linear-gradient(135deg, #4285F4, #1a56db);
+            color: white;
+        }
+
+        .map-btn-apple {
+            background: linear-gradient(135deg, #555, #222);
+            color: white;
+        }
+
+        #copy-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            width: 100%;
+            padding: 11px;
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.7);
+            font-family: inherit;
+            font-size: 0.82rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        #copy-btn:hover {
+            background: rgba(255, 255, 255, 0.09);
+        }
+
+        #gps-error {
+            display: none;
+            background: rgba(189, 30, 46, 0.15);
+            border: 1px solid rgba(189, 30, 46, 0.35);
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
+            margin-top: 12px;
+            font-size: 0.8rem;
+            color: #fca5a5;
+            line-height: 1.5;
+        }
+
+        /* ─────────────────────────────────────────────────────────── */
+        /* 8. PHOTO SECTION                                            */
+        /* ─────────────────────────────────────────────────────────── */
+        .photo-instruction {
+            font-size: 0.82rem;
+            color: rgba(255, 255, 255, 0.5);
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        #camera-area {
+            display: none;
+            margin-bottom: 14px;
+        }
+
+        #camera-video {
+            width: 100%;
+            border-radius: var(--radius-sm);
+            background: #000;
+            max-height: 260px;
+            object-fit: cover;
+        }
+
+        .photo-btns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        #open-camera-btn,
+        #snap-btn,
+        #share-photo-btn,
+        #retake-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 13px;
+            border-radius: var(--radius-sm);
+            border: none;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.15s, opacity 0.15s;
+        }
+
+        #open-camera-btn {
+            width: 100%;
+            background: rgba(41, 36, 88, 0.5);
+            border: 1px solid rgba(41, 36, 88, 0.9);
+            color: white;
+        }
+
+        #open-camera-btn:hover {
+            background: rgba(41, 36, 88, 0.7);
+        }
+
+        #snap-btn {
+            background: var(--red);
+            color: white;
+            box-shadow: 0 3px 12px rgba(189, 30, 46, 0.35);
+        }
+
+        #retake-btn {
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        #share-photo-btn {
+            background: linear-gradient(135deg, #059669, #047857);
+            color: white;
+            box-shadow: 0 3px 12px rgba(5, 150, 105, 0.3);
+        }
+
+        #photo-preview-wrap {
+            display: none;
+            margin-bottom: 12px;
+        }
+
+        #photo-preview {
+            width: 100%;
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .photo-actions {
+            display: none;
+        }
+
+        /* ─────────────────────────────────────────────────────────── */
+        /* 9. FOOTER                                                   */
+        /* ─────────────────────────────────────────────────────────── */
+        .footer {
+            margin-top: 24px;
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+
+        /* ─────────────────────────────────────────────────────────── */
+        /* 10. DIVIDER                                                 */
+        /* ─────────────────────────────────────────────────────────── */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 4px 0 16px;
+        }
+
+        .divider span {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.2);
+            white-space: nowrap;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.07);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ── CONFIG ─────────────────────────────────────────────── -->
+    <script>
+        // ╔══════════════════════════════════════════════════════╗
+        // ║   EDIT THESE TWO VALUES WHEN YOUR MEETING IS SET UP  ║
+        // ╚══════════════════════════════════════════════════════╝
+        const MEETING_LINK = "https://meet.google.com/vnz-jgvp-ywe";
+        // Business hours: 8:00 AM – 5:00 PM Central Time, Mon–Fri
+        const BIZ_START_HOUR = 8;   // 24-hour
+        const BIZ_END_HOUR = 17;  // 24-hour (5 PM)
+    </script>
+
+    <!-- ── BRAND BAR ───────────────────────────────────────────── -->
+    <div class="brand-bar">
+        <div class="brand-shield">
+            <svg viewBox="0 0 24 24">
+                <path
+                    d="M12 2L3 6v5c0 5.25 3.75 10.15 9 11.35C17.25 21.15 21 16.25 21 11V6l-9-4zm-1.5 13.5l-3-3 1.41-1.41 1.59 1.58 4.09-4.08 1.41 1.41-5.5 5.5z" />
+            </svg>
+        </div>
+        <div class="brand-text">
+            <h1>Knockout Inspections</h1>
+            <p>Virtual Inspection Portal</p>
+        </div>
+    </div>
+
+    <!-- ── HERO ───────────────────────────────────────────────── -->
+    <div class="hero">
+        <div id="hours-badge" class="hours-badge">
+            <div class="pulse-dot"></div>
+            <span id="hours-label">Checking hours…</span>
+        </div>
+        <h2>Your <span>Live Inspection</span><br>Starts Here</h2>
+        <p>Share your location, then tap to join the live call with your inspector. No app needed.</p>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <!-- STEP 1 · JOIN THE CALL                                     -->
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <div class="card">
+        <div class="card-header">
+            <div class="step-num step-primary">1</div>
+            <div>
+                <div class="card-title">Join the Live Video Call</div>
+                <div class="card-subtitle">Opens in Google Meet — no account required</div>
+            </div>
+        </div>
+        <div class="card-body">
+            <a id="join-btn" href="#" target="_blank" rel="noopener">
+                <!-- Video camera icon -->
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                </svg>
+                Join Inspection Call
+            </a>
+            <p class="call-note" id="call-note">
+                <strong>Available Mon–Fri, 8 AM – 5 PM Central.</strong><br>
+                An inspector will be waiting for you.
+            </p>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <!-- STEP 2 · GPS LOCATION                                      -->
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <div class="card">
+        <div class="card-header">
+            <div class="step-num step-primary" id="gps-step-num">2</div>
+            <div>
+                <div class="card-title">Share Your GPS Location</div>
+                <div class="card-subtitle">Helps your inspector reference the property</div>
+            </div>
+        </div>
+        <div class="card-body">
+            <button id="gps-share-btn" onclick="requestLocation()">
+                <svg viewBox="0 0 24 24">
+                    <path
+                        d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                </svg>
+                Share My Location
+            </button>
+
+            <div id="gps-status"></div>
+
+            <div id="gps-error"></div>
+
+            <div id="gps-result">
+                <div class="coords-box">
+                    <div class="coords-label">📍 GPS Coordinates</div>
+                    <div class="coord-row">
+                        <span class="coord-key">Latitude</span>
+                        <span class="coord-val" id="lat">—</span>
+                    </div>
+                    <div class="coord-row">
+                        <span class="coord-key">Longitude</span>
+                        <span class="coord-val" id="lng">—</span>
+                    </div>
+                    <div class="coord-row">
+                        <span class="coord-key">Accuracy</span>
+                        <span class="coord-val" id="acc">—</span>
+                    </div>
+                    <span id="acc-badge" class="accuracy-badge"></span>
+                </div>
+
+                <div class="map-btns">
+                    <a id="gmap-btn" href="#" target="_blank" rel="noopener" class="map-btn map-btn-google">
+                        🗺 Google Maps
+                    </a>
+                    <a id="amap-btn" href="#" target="_blank" rel="noopener" class="map-btn map-btn-apple">
+                        🍎 Apple Maps
+                    </a>
+                </div>
+
+                <button id="copy-btn" onclick="copyCoords()">
+                    📋 Copy Coordinates to Share in Chat
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <!-- STEP 3 · PHOTO CAPTURE (secondary)                        -->
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <div class="card">
+        <div class="card-header">
+            <div class="step-num step-secondary">3</div>
+            <div>
+                <div class="card-title">Send a Photo to Your Inspector</div>
+                <div class="card-subtitle">Optional — use during or after the call</div>
+            </div>
+        </div>
+        <div class="card-body">
+            <p class="photo-instruction">
+                Take a photo of anything your inspector needs to see up close. You can share it directly into the Meet
+                chat.
+            </p>
+
+            <!-- Camera not yet open -->
+            <div id="camera-closed">
+                <button id="open-camera-btn" onclick="openCamera()">
+                    📷 &nbsp;Open Camera
+                </button>
+            </div>
+
+            <!-- Live camera preview -->
+            <div id="camera-area">
+                <video id="camera-video" autoplay playsinline muted></video>
+                <canvas id="snap-canvas" style="display:none;"></canvas>
+                <div class="photo-btns">
+                    <button id="snap-btn" onclick="snapPhoto()">📸 &nbsp;Take Photo</button>
+                    <button id="retake-btn" style="display:none;" onclick="retakePhoto()">🔄 &nbsp;Retake</button>
+                </div>
+            </div>
+
+            <!-- Photo preview after snap -->
+            <div id="photo-preview-wrap">
+                <img id="photo-preview" alt="Captured photo" />
+            </div>
+
+            <!-- Share / Download actions -->
+            <div class="photo-btns photo-actions" id="photo-actions" style="display:none;">
+                <button id="share-photo-btn" onclick="sharePhoto()">📤 &nbsp;Share to Meet Chat</button>
+                <button id="retake-btn2" onclick="retakePhoto()"
+                    style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);padding:13px;border-radius:8px;font-family:inherit;font-size:0.85rem;font-weight:600;cursor:pointer;">🔄
+                    Retake</button>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="footer">© Knockout Inspections · Secure · No data stored · go4ko.com</div>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- JAVASCRIPT                                                  -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <script>
+        /* ── 1. Business hours check ────────────────────────────── */
+        (function checkHours() {
+            const badge = document.getElementById('hours-badge');
+            const label = document.getElementById('hours-label');
+            const joinBtn = document.getElementById('join-btn');
+            const callNote = document.getElementById('call-note');
+
+            // Convert current time to US Central using Intl API
+            const nowCentral = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' }));
+            const day = nowCentral.getDay();   // 0=Sun, 6=Sat
+            const hour = nowCentral.getHours(); // 24h
+
+            const isWeekday = day >= 1 && day <= 5;
+            const isInHours = hour >= BIZ_START_HOUR && hour < BIZ_END_HOUR;
+            const isOpen = isWeekday && isInHours;
+
+            if (isOpen) {
+                badge.classList.add('open');
+                badge.classList.remove('closed');
+                label.textContent = 'Inspectors Available Now';
+                joinBtn.href = MEETING_LINK;
+                joinBtn.classList.remove('disabled');
+            } else {
+                badge.classList.add('closed');
+                badge.classList.remove('open');
+                const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                label.textContent = 'Closed — Open Mon–Fri 8 AM–5 PM CT';
+                joinBtn.href = '#';
+                joinBtn.classList.add('disabled');
+                joinBtn.onclick = (e) => { e.preventDefault(); };
+                callNote.innerHTML = '<strong>Office is currently closed.</strong> Hours are Mon–Fri, 8 AM – 5 PM Central. You can still share your GPS location below.';
+            }
+        })();
+
+        /* ── 2. GPS capture ─────────────────────────────────────── */
+        let capturedLat = null;
+        let capturedLng = null;
+
+        function requestLocation() {
+            const btn = document.getElementById('gps-share-btn');
+            const status = document.getElementById('gps-status');
+            const errDiv = document.getElementById('gps-error');
+
+            errDiv.style.display = 'none';
+
+            if (!navigator.geolocation) {
+                showGpsError("Your browser doesn't support location sharing. Please open this link in Chrome or Safari.");
+                return;
+            }
+
+            btn.disabled = true;
+            status.innerHTML = '<span class="spinner"></span> Locating you…';
+
+            navigator.geolocation.getCurrentPosition(onGpsSuccess, onGpsError, {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 0
+            });
+        }
+
+        function onGpsSuccess(pos) {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            const acc = pos.coords.accuracy;
+            capturedLat = lat;
+            capturedLng = lng;
+
+            document.getElementById('lat').textContent = lat.toFixed(6);
+            document.getElementById('lng').textContent = lng.toFixed(6);
+            document.getElementById('acc').textContent = acc < 1000 ? `±${Math.round(acc)} m` : `±${(acc / 1000).toFixed(1)} km`;
+
+            const badge = document.getElementById('acc-badge');
+            if (acc <= 30) {
+                badge.className = 'accuracy-badge acc-good';
+                badge.textContent = '✓ High Accuracy';
+            } else if (acc <= 150) {
+                badge.className = 'accuracy-badge acc-ok';
+                badge.textContent = '⚠ Moderate Accuracy';
+            } else {
+                badge.className = 'accuracy-badge acc-poor';
+                badge.textContent = '✕ Low Accuracy — move outdoors';
+            }
+
+            const query = `${lat},${lng}`;
+            document.getElementById('gmap-btn').href = `https://www.google.com/maps/search/?api=1&query=${query}`;
+            document.getElementById('amap-btn').href = `https://maps.apple.com/?q=${query}&ll=${query}`;
+
+            document.getElementById('gps-status').innerHTML = '';
+            document.getElementById('gps-share-btn').style.display = 'none';
+            document.getElementById('gps-result').style.display = 'block';
+
+            // Mark step complete
+            const stepNum = document.getElementById('gps-step-num');
+            stepNum.className = 'step-num step-done';
+            stepNum.textContent = '✓';
+        }
+
+        function onGpsError(err) {
+            document.getElementById('gps-status').innerHTML = '';
+            document.getElementById('gps-share-btn').disabled = false;
+            let msg = '';
+            switch (err.code) {
+                case err.PERMISSION_DENIED:
+                    msg = '⚠️ Location access denied. Go to your phone Settings → Safari/Chrome → Location, allow access, then try again.'; break;
+                case err.POSITION_UNAVAILABLE:
+                    msg = '⚠️ Location unavailable. Make sure Location Services is on in your phone settings.'; break;
+                case err.TIMEOUT:
+                    msg = '⚠️ Location request timed out. Move to an area with better signal and try again.'; break;
+                default:
+                    msg = '⚠️ Could not get location. Refresh the page and try again.';
+            }
+            showGpsError(msg);
+        }
+
+        function showGpsError(msg) {
+            const el = document.getElementById('gps-error');
+            el.textContent = msg;
+            el.style.display = 'block';
+        }
+
+        function copyCoords() {
+            if (capturedLat === null) return;
+            const text = `${capturedLat.toFixed(6)}, ${capturedLng.toFixed(6)}`;
+            const btn = document.getElementById('copy-btn');
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => {
+                    btn.textContent = '✓ Copied! Paste this into the Meet chat.';
+                    setTimeout(() => { btn.textContent = '📋 Copy Coordinates to Share in Chat'; }, 3000);
+                });
+            } else {
+                const el = document.createElement('textarea');
+                el.value = text;
+                document.body.appendChild(el);
+                el.select();
+                document.execCommand('copy');
+                document.body.removeChild(el);
+                btn.textContent = '✓ Copied!';
+                setTimeout(() => { btn.textContent = '📋 Copy Coordinates to Share in Chat'; }, 3000);
+            }
+        }
+
+        /* ── 3. Camera / Photo capture ──────────────────────────── */
+        let stream = null;
+        let capturedBlob = null;
+
+        async function openCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+                    audio: false
+                });
+                const video = document.getElementById('camera-video');
+                video.srcObject = stream;
+
+                document.getElementById('camera-closed').style.display = 'none';
+                document.getElementById('camera-area').style.display = 'block';
+            } catch (e) {
+                alert('Camera access denied or unavailable. Please allow camera access in your browser settings.');
+            }
+        }
+
+        function snapPhoto() {
+            const video = document.getElementById('camera-video');
+            const canvas = document.getElementById('snap-canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+
+            canvas.toBlob((blob) => {
+                capturedBlob = blob;
+                const url = URL.createObjectURL(blob);
+                document.getElementById('photo-preview').src = url;
+                document.getElementById('photo-preview-wrap').style.display = 'block';
+                document.getElementById('photo-actions').style.display = 'grid';
+                document.getElementById('snap-btn').style.display = 'none';
+
+                // Stop live feed
+                stopStream();
+                document.getElementById('camera-area').style.display = 'none';
+            }, 'image/jpeg', 0.92);
+        }
+
+        function retakePhoto() {
+            capturedBlob = null;
+            document.getElementById('photo-preview-wrap').style.display = 'none';
+            document.getElementById('photo-actions').style.display = 'none';
+            document.getElementById('snap-btn').style.display = 'flex';
+            document.getElementById('camera-closed').style.display = 'block';
+        }
+
+        function stopStream() {
+            if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+        }
+
+        async function sharePhoto() {
+            if (!capturedBlob) return;
+            const file = new File([capturedBlob], `inspection-photo-${Date.now()}.jpg`, { type: 'image/jpeg' });
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Inspection Photo',
+                        text: 'Photo from Knockout Inspections virtual inspection'
+                    });
+                } catch (e) {
+                    if (e.name !== 'AbortError') fallbackDownload(file);
+                }
+            } else {
+                fallbackDownload(file);
+            }
+        }
+
+        function fallbackDownload(file) {
+            const url = URL.createObjectURL(file);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = file.name;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+
+</html>
