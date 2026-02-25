@@ -547,6 +547,36 @@
         /* ─────────────────────────────────────────────────────────── */
         /* 8. PHOTO SECTION                                            */
         /* ─────────────────────────────────────────────────────────── */
+
+        #flip-btn {
+            display: none;
+            /* shown by JS only if multiple cameras exist */
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(41, 36, 88, 0.75);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 7px 14px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            -webkit-backdrop-filter: blur(4px);
+            backdrop-filter: blur(4px);
+            transition: background 0.15s;
+            z-index: 10;
+        }
+
+        #flip-btn:hover {
+            background: rgba(41, 36, 88, 0.95);
+        }
+
+        #camera-area {
+            position: relative;
+        }
+
         .photo-instruction {
             font-size: 0.82rem;
             color: #64748b;
@@ -825,6 +855,7 @@
             <div id="camera-area">
                 <video id="camera-video" autoplay playsinline muted></video>
                 <canvas id="snap-canvas" style="display:none;"></canvas>
+                <button id="flip-btn" onclick="flipCamera()" title="Flip camera">🔄 Flip</button>
                 <div class="photo-btns">
                     <button id="snap-btn" onclick="snapPhoto()">📸 &nbsp;Take Photo</button>
                     <button id="retake-btn" style="display:none;" onclick="retakePhoto()">🔄 &nbsp;Retake</button>
@@ -1033,21 +1064,40 @@ Try refreshing the page and tapping <strong>Share My Location</strong> again. If
         /* ── 3. Camera / Photo capture ──────────────────────────── */
         let stream = null;
         let capturedBlob = null;
+        let currentFacing = 'environment'; // start on rear camera
 
-        async function openCamera() {
+        async function openCamera(facing) {
+            facing = facing || currentFacing;
+            // Stop any existing stream first
+            if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
             try {
                 stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+                    video: { facingMode: { ideal: facing }, width: { ideal: 1920 }, height: { ideal: 1080 } },
                     audio: false
                 });
+                currentFacing = facing;
                 const video = document.getElementById('camera-video');
                 video.srcObject = stream;
 
                 document.getElementById('camera-closed').style.display = 'none';
                 document.getElementById('camera-area').style.display = 'block';
+
+                // Show flip button only if device has multiple cameras
+                if (navigator.mediaDevices.enumerateDevices) {
+                    navigator.mediaDevices.enumerateDevices().then(devices => {
+                        const videoInputs = devices.filter(d => d.kind === 'videoinput');
+                        document.getElementById('flip-btn').style.display =
+                            videoInputs.length > 1 ? 'block' : 'none';
+                    });
+                }
             } catch (e) {
                 alert('Camera access denied or unavailable. Please allow camera access in your browser settings.');
             }
+        }
+
+        async function flipCamera() {
+            const newFacing = currentFacing === 'environment' ? 'user' : 'environment';
+            await openCamera(newFacing);
         }
 
         function snapPhoto() {
