@@ -1097,7 +1097,23 @@
                 badge.classList.remove('closed');
                 label.textContent = 'Inspectors Available Now';
                 joinBtn.href = MEETING_LINK;
-                joinBtn.classList.remove('disabled');
+                // GPS must be shared first — start locked
+                joinBtn.classList.add('disabled');
+                joinBtn.onclick = (e) => {
+                    if (!capturedLat) {
+                        e.preventDefault();
+                        // Pulse the GPS card to draw attention
+                        const gpsBtn = document.getElementById('gps-share-btn');
+                        if (gpsBtn) {
+                            gpsBtn.style.transform = 'scale(1.04)';
+                            setTimeout(() => { gpsBtn.style.transform = ''; }, 300);
+                        }
+                        return;
+                    }
+                    startHold(e);
+                };
+                document.getElementById('call-note').innerHTML =
+                    '<strong>Step 2 required:</strong> Share your GPS location below first, then this button will activate.';
             } else {
                 badge.classList.add('closed');
                 badge.classList.remove('open');
@@ -1160,8 +1176,11 @@
                 timeZone: 'America/Chicago',
                 hour: 'numeric', minute: '2-digit', hour12: true
             });
+            const coordLine = capturedLat
+                ? `\n📍 *GPS:* ${capturedLat.toFixed(6)}, ${capturedLng.toFixed(6)}\n🗺️ https://www.google.com/maps/search/?api=1&query=${capturedLat.toFixed(6)},${capturedLng.toFixed(6)}`
+                : '\n⚠️ GPS not yet captured';
             const payload = {
-                text: `📞 *New virtual inspection request* — ${now} CT\nSomeone just tapped "Join" on the portal. Please join the room now:\n${MEETING_LINK}`
+                text: `📞 *New virtual inspection request* — ${now} CT${coordLine}\nPlease join the room now: ${MEETING_LINK}`
             };
             fetch(CHAT_WEBHOOK_URL, {
                 method: 'POST',
@@ -1231,6 +1250,14 @@
             const stepNum = document.getElementById('gps-step-num');
             stepNum.className = 'step-num step-done';
             stepNum.textContent = '✓';
+
+            // Unlock the Join button now that GPS is captured
+            const joinBtn = document.getElementById('join-btn');
+            if (joinBtn && joinBtn.classList.contains('disabled')) {
+                joinBtn.classList.remove('disabled');
+                document.getElementById('call-note').innerHTML =
+                    '<strong>✓ Location captured.</strong> Tap Join Inspection Call above to connect with your inspector.';
+            }
         }
 
         function onGpsError(err) {
