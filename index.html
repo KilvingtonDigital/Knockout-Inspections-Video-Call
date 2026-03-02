@@ -1169,6 +1169,8 @@
             const timerEl = document.getElementById('hold-timer');
             let remaining = HOLD_SECONDS;
 
+            let statusPoll = null;
+
             function tick() {
                 remaining--;
                 // Update countdown text
@@ -1181,18 +1183,38 @@
 
                 if (remaining <= 0) {
                     clearInterval(holdInterval);
-                    showInspectorReady();
+                    clearInterval(statusPoll);
+                    showInspectorReady(null);
                 }
             }
 
             holdInterval = setInterval(tick, 1000);
+
+            // Poll /api/status every 3 s — end countdown early if accepted
+            statusPoll = setInterval(async () => {
+                try {
+                    const r = await fetch(`/api/status?session=${SESSION_ID}`);
+                    if (!r.ok) return;
+                    const data = await r.json();
+                    if (data.accepted) {
+                        clearInterval(holdInterval);
+                        clearInterval(statusPoll);
+                        showInspectorReady(data.acceptedBy);
+                    }
+                } catch (_) { /* non-fatal, keep waiting */ }
+            }, 3000);
         }
 
-        function showInspectorReady() {
+        function showInspectorReady(acceptedBy) {
             document.getElementById('join-hold').style.display = 'none';
             document.getElementById('join-ready').style.display = 'block';
             // Wire the real Meet link onto the ready button
             document.getElementById('join-btn-ready').href = MEETING_LINK;
+            // Show inspector name if we have one
+            if (acceptedBy) {
+                const title = document.querySelector('#join-ready .hold-title');
+                if (title) title.textContent = `✅ ${acceptedBy} is ready for your call!`;
+            }
         }
 
         function sendTeamNotification() {
@@ -1209,6 +1231,7 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    sessionId: SESSION_ID,
                     lat: capturedLat,
                     lng: capturedLng,
                     acc: capturedAcc,
@@ -1222,6 +1245,11 @@
         let capturedLat = null;
         let capturedLng = null;
         let capturedAcc = null; // metres
+
+        // Unique session ID for this page load — ties the customer to the inspector dispatch
+        const SESSION_ID = (typeof crypto !== 'undefined' && crypto.randomUUID)
+            ? crypto.randomUUID()
+            : Math.random().toString(36).slice(2) + Date.now().toString(36);
 
         function requestLocation() {
             const btn = document.getElementById('gps-share-btn');
