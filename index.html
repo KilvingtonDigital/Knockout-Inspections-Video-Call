@@ -1200,6 +1200,10 @@
                 timeZone: 'America/Chicago',
                 hour: 'numeric', minute: '2-digit', hour12: true
             });
+            const dateStr = new Date().toLocaleDateString('en-US', {
+                timeZone: 'America/Chicago',
+                weekday: 'short', month: 'short', day: 'numeric'
+            });
             // POST to our serverless proxy — secret stays server-side
             fetch('/api/notify', {
                 method: 'POST',
@@ -1207,7 +1211,9 @@
                 body: JSON.stringify({
                     lat: capturedLat,
                     lng: capturedLng,
-                    time: now
+                    acc: capturedAcc,
+                    time: now,
+                    date: dateStr
                 })
             }).catch(() => { /* silent */ });
         }
@@ -1215,6 +1221,7 @@
         /* ── 2. GPS capture ─────────────────────────────────────── */
         let capturedLat = null;
         let capturedLng = null;
+        let capturedAcc = null; // metres
 
         function requestLocation() {
             const btn = document.getElementById('gps-share-btn');
@@ -1244,6 +1251,7 @@
             const acc = pos.coords.accuracy;
             capturedLat = lat;
             capturedLng = lng;
+            capturedAcc = acc;
 
             document.getElementById('lat').textContent = lat.toFixed(6);
             document.getElementById('lng').textContent = lng.toFixed(6);
