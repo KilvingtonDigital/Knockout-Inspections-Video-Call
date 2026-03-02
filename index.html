@@ -1343,7 +1343,7 @@ Try refreshing the page and tapping <strong>Share My Location</strong> again. If
 
         function showGpsError(msg) {
             const el = document.getElementById('gps-error');
-            el.textContent = msg;
+            el.innerHTML = msg;
             el.style.display = 'block';
         }
 
