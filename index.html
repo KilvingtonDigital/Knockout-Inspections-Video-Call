@@ -859,10 +859,9 @@
         const BIZ_END_HOUR = 17;  // 24-hour (5 PM)
         // Hold countdown duration before Meet link activates (seconds)
         const HOLD_SECONDS = 120; // 2 minutes
-        // ══ GOOGLE CHAT WEBHOOK ═════════════════════════════════
-        // Paste your Google Chat space webhook URL below.
-        // Leave as empty string "" to disable notifications (hold timer still works).
-        const CHAT_WEBHOOK_URL = "https://chat.googleapis.com/v1/spaces/AAQA31WhBtg/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=7k9jepi5k64nKOKKqFsKz5UNsPwK2RReVorXfVZtqLw";
+        // ══ TEAM NOTIFICATION ═══════════════════════════════════
+        // Webhook URL is stored securely as a Vercel environment
+        // variable (CHAT_WEBHOOK_URL). Do not put secrets here.
         // ═══════════════════════════════════════════════════════
     </script>
 
@@ -1171,22 +1170,20 @@
         }
 
         function sendTeamNotification() {
-            if (!CHAT_WEBHOOK_URL) return; // disabled if no URL configured
             const now = new Date().toLocaleString('en-US', {
                 timeZone: 'America/Chicago',
                 hour: 'numeric', minute: '2-digit', hour12: true
             });
-            const coordLine = capturedLat
-                ? `\n📍 *GPS:* ${capturedLat.toFixed(6)}, ${capturedLng.toFixed(6)}\n🗺️ https://www.google.com/maps/search/?api=1&query=${capturedLat.toFixed(6)},${capturedLng.toFixed(6)}`
-                : '\n⚠️ GPS not yet captured';
-            const payload = {
-                text: `📞 *New virtual inspection request* — ${now} CT${coordLine}\nPlease join the room now: ${MEETING_LINK}`
-            };
-            fetch(CHAT_WEBHOOK_URL, {
+            // POST to our serverless proxy — secret stays server-side
+            fetch('/api/notify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            }).catch(() => { /* silent — don't surface network errors to customer */ });
+                body: JSON.stringify({
+                    lat: capturedLat,
+                    lng: capturedLng,
+                    time: now
+                })
+            }).catch(() => { /* silent */ });
         }
 
         /* ── 2. GPS capture ─────────────────────────────────────── */
