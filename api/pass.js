@@ -72,11 +72,7 @@ export default async function handler(req, res) {
                                         ...(mapsUrl ? [{
                                             text: '🗺️ Google Maps',
                                             onClick: { openLink: { url: mapsUrl } }
-                                        }] : []),
-                                        {
-                                            text: '📹 Join Meet',
-                                            onClick: { openLink: { url: MEET_LINK } }
-                                        }
+                                        }] : [])
                                     ]
                                 }
                             }]
