@@ -677,6 +677,150 @@
         }
 
         /* ─────────────────────────────────────────────────────────── */
+        /* 11. HOLD / QUEUE SCREEN                                     */
+        /* ─────────────────────────────────────────────────────────── */
+        #join-hold,
+        #join-ready {
+            text-align: center;
+            padding: 8px 0 4px;
+        }
+
+        .hold-ring {
+            position: relative;
+            width: 88px;
+            height: 88px;
+            margin: 0 auto 16px;
+        }
+
+        .hold-ring-svg {
+            width: 88px;
+            height: 88px;
+            transform: rotate(-90deg);
+        }
+
+        .hold-ring-track {
+            fill: none;
+            stroke: #e2e8f0;
+            stroke-width: 5;
+        }
+
+        .hold-ring-fill {
+            fill: none;
+            stroke: var(--red);
+            stroke-width: 5;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s linear;
+        }
+
+        .hold-timer {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--red);
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .hold-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin: 0 0 6px;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .hold-sub {
+            font-size: 0.82rem;
+            color: #64748b;
+            line-height: 1.6;
+            margin: 0 0 14px;
+        }
+
+        /* Pulsing dots animation */
+        .hold-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .hold-dots span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--red);
+            animation: dot-pulse 1.4s ease-in-out infinite;
+        }
+
+        .hold-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .hold-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes dot-pulse {
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0.6);
+                opacity: 0.4;
+            }
+
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Ready state */
+        .ready-check {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+        }
+
+        .ready-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 17px;
+            border-radius: var(--radius-md);
+            border: none;
+            text-decoration: none;
+            background: linear-gradient(135deg, #095731 0%, #064020 100%);
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 6px 24px rgba(9, 87, 49, 0.4);
+            animation: pulse-green 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-green {
+
+            0%,
+            100% {
+                box-shadow: 0 6px 24px rgba(9, 87, 49, 0.4);
+            }
+
+            50% {
+                box-shadow: 0 6px 32px rgba(9, 87, 49, 0.7);
+            }
+        }
+
+        .ready-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* ─────────────────────────────────────────────────────────── */
         /* 10. DIVIDER                                                 */
         /* ─────────────────────────────────────────────────────────── */
         .divider {
@@ -713,6 +857,13 @@
         // Business hours: 8:00 AM – 5:00 PM Central Time, Mon–Fri
         const BIZ_START_HOUR = 8;   // 24-hour
         const BIZ_END_HOUR = 17;  // 24-hour (5 PM)
+        // Hold countdown duration before Meet link activates (seconds)
+        const HOLD_SECONDS = 120; // 2 minutes
+        // ══ GOOGLE CHAT WEBHOOK ═════════════════════════════════
+        // Paste your Google Chat space webhook URL below.
+        // Leave as empty string "" to disable notifications (hold timer still works).
+        const CHAT_WEBHOOK_URL = "";
+        // ═══════════════════════════════════════════════════════
     </script>
 
     <!-- ── BRAND BAR ───────────────────────────────────────────── -->
@@ -751,19 +902,55 @@
             </div>
         </div>
         <div class="card-body">
-            <a id="join-btn" href="#" target="_blank" rel="noopener">
-                <!-- Video camera icon -->
-                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"
-                    stroke-linejoin="round">
-                    <polygon points="23 7 16 12 23 17 23 7"></polygon>
-                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
-                </svg>
-                Join Inspection Call
-            </a>
-            <p class="call-note" id="call-note">
-                <strong>Available Mon–Fri, 8 AM – 5 PM Central.</strong><br>
-                An inspector will be waiting for you.
-            </p>
+            <!-- Normal join state -->
+            <div id="join-default">
+                <a id="join-btn" href="#" target="_blank" rel="noopener" onclick="startHold(event)">
+                    <!-- Video camera icon -->
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                    </svg>
+                    Join Inspection Call
+                </a>
+                <p class="call-note" id="call-note">
+                    <strong>Available Mon–Fri, 8 AM – 5 PM Central.</strong><br>
+                    An inspector will be waiting for you.
+                </p>
+            </div>
+
+            <!-- Hold / countdown state -->
+            <div id="join-hold" style="display:none;">
+                <div class="hold-ring">
+                    <svg class="hold-ring-svg" viewBox="0 0 64 64">
+                        <circle class="hold-ring-track" cx="32" cy="32" r="28" />
+                        <circle class="hold-ring-fill" id="hold-ring-fill" cx="32" cy="32" r="28"
+                            stroke-dasharray="175.9" stroke-dashoffset="0" />
+                    </svg>
+                    <div class="hold-timer" id="hold-timer">2:00</div>
+                </div>
+                <p class="hold-title">Getting your inspector ready…</p>
+                <p class="hold-sub">An inspector has been notified and is joining now.<br>Your call will open in just a
+                    moment.</p>
+                <div class="hold-dots">
+                    <span></span><span></span><span></span>
+                </div>
+            </div>
+
+            <!-- Ready state -->
+            <div id="join-ready" style="display:none;">
+                <div class="ready-check">✅</div>
+                <p class="hold-title" style="color:#095731;">Your inspector is ready!</p>
+                <a id="join-btn-ready" class="ready-btn" href="#" target="_blank" rel="noopener">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                    </svg>
+                    Tap Here to Join the Call
+                </a>
+                <p class="hold-sub" style="margin-top:10px;">Link opens in Google Meet — no account needed.</p>
+            </div>
         </div>
     </div>
 
@@ -922,6 +1109,66 @@
                 callNote.innerHTML = '<strong>Office is currently closed.</strong> Hours are Mon–Fri, 8 AM – 5 PM Central. You can still share your GPS location below.';
             }
         })();
+
+        /* ── 1b. Hold screen / queue ─────────────────────────────── */
+        let holdInterval = null;
+
+        function startHold(e) {
+            e.preventDefault(); // don't follow href yet
+
+            // Notify the team immediately
+            sendTeamNotification();
+
+            // Show hold UI, hide default join state
+            document.getElementById('join-default').style.display = 'none';
+            document.getElementById('join-hold').style.display = 'block';
+
+            const circumference = 175.9; // 2π × 28
+            const ring = document.getElementById('hold-ring-fill');
+            const timerEl = document.getElementById('hold-timer');
+            let remaining = HOLD_SECONDS;
+
+            function tick() {
+                remaining--;
+                // Update countdown text
+                const m = Math.floor(remaining / 60);
+                const s = remaining % 60;
+                timerEl.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+                // Animate ring draining
+                const offset = circumference * (1 - remaining / HOLD_SECONDS);
+                ring.style.strokeDashoffset = offset;
+
+                if (remaining <= 0) {
+                    clearInterval(holdInterval);
+                    showInspectorReady();
+                }
+            }
+
+            holdInterval = setInterval(tick, 1000);
+        }
+
+        function showInspectorReady() {
+            document.getElementById('join-hold').style.display = 'none';
+            document.getElementById('join-ready').style.display = 'block';
+            // Wire the real Meet link onto the ready button
+            document.getElementById('join-btn-ready').href = MEETING_LINK;
+        }
+
+        function sendTeamNotification() {
+            if (!CHAT_WEBHOOK_URL) return; // disabled if no URL configured
+            const now = new Date().toLocaleString('en-US', {
+                timeZone: 'America/Chicago',
+                hour: 'numeric', minute: '2-digit', hour12: true
+            });
+            const payload = {
+                text: `📞 *New virtual inspection request* — ${now} CT\nSomeone just tapped "Join" on the portal. Please join the room now:\n${MEETING_LINK}`
+            };
+            fetch(CHAT_WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(() => { /* silent — don't surface network errors to customer */ });
+        }
 
         /* ── 2. GPS capture ─────────────────────────────────────── */
         let capturedLat = null;
