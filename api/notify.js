@@ -20,7 +20,6 @@ import { kv } from '@vercel/kv';
 
 const MEET_LINK = 'https://meet.google.com/vnz-jgvp-ywe';
 const INSPECTORS = ['Ricky', 'Hunter', 'Nate'];
-const BASE_URL = 'https://live.goforko.com';
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -31,6 +30,11 @@ export default async function handler(req, res) {
     if (!webhookUrl) {
         return res.status(200).json({ ok: true, note: 'webhook not configured' });
     }
+
+    // Derive base URL from request so buttons always work on any domain/preview
+    const proto = req.headers['x-forwarded-proto'] || 'https';
+    const host = req.headers['x-forwarded-host'] || req.headers.host;
+    const BASE_URL = `${proto}://${host}`;
 
     const { sessionId, lat, lng, acc, time, date } = req.body || {};
 

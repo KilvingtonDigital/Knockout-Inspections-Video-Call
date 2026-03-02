@@ -8,10 +8,14 @@ import { kv } from '@vercel/kv';
 
 const MEET_LINK = 'https://meet.google.com/vnz-jgvp-ywe';
 const INSPECTORS = ['Ricky', 'Hunter', 'Nate'];
-const BASE_URL = 'https://live.goforko.com';
 
 export default async function handler(req, res) {
     const { session } = req.query;
+
+    // Derive base URL from request so Accept buttons always work on any domain
+    const proto = req.headers['x-forwarded-proto'] || 'https';
+    const host = req.headers['x-forwarded-host'] || req.headers.host;
+    const BASE_URL = `${proto}://${host}`;
 
     // Try to fetch stored GPS data for the session
     let sessionData = null;
