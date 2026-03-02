@@ -843,6 +843,31 @@
             height: 1px;
             background: #e2e8f0;
         }
+
+        /* card--locked: visual treatment for steps that aren't available yet */
+        .card--locked {
+            opacity: 0.55;
+            pointer-events: none;
+            filter: grayscale(0.3);
+            transition: opacity 0.4s ease, filter 0.4s ease;
+        }
+
+        .card--locked.unlocked {
+            opacity: 1;
+            pointer-events: auto;
+            filter: none;
+        }
+
+        .card-header {
+            position: relative;
+        }
+
+        .lock-icon {
+            margin-left: auto;
+            font-size: 1.1rem;
+            opacity: 0.6;
+            transition: opacity 0.3s;
+        }
     </style>
 </head>
 
@@ -890,15 +915,74 @@
     </div>
 
     <!-- ══════════════════════════════════════════════════════════ -->
-    <!-- STEP 1 · JOIN THE CALL                                     -->
+    <!-- STEP 1 · GPS LOCATION (required first)                    -->
     <!-- ══════════════════════════════════════════════════════════ -->
     <div class="card">
         <div class="card-header">
-            <div class="step-num step-primary">1</div>
+            <div class="step-num step-primary" id="gps-step-num">1</div>
+            <div>
+                <div class="card-title">Share Your GPS Location</div>
+                <div class="card-subtitle">Required first — helps your inspector find the property</div>
+            </div>
+        </div>
+        <div class="card-body">
+            <button id="gps-share-btn" onclick="requestLocation()">
+                <svg viewBox="0 0 24 24">
+                    <path
+                        d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                </svg>
+                Share My Location
+            </button>
+
+            <div id="gps-status"></div>
+
+            <div id="gps-error"></div>
+
+            <div id="gps-result">
+                <div class="coords-box">
+                    <div class="coords-label">📍 GPS Coordinates</div>
+                    <div class="coord-row">
+                        <span class="coord-key">Latitude</span>
+                        <span class="coord-val" id="lat">—</span>
+                    </div>
+                    <div class="coord-row">
+                        <span class="coord-key">Longitude</span>
+                        <span class="coord-val" id="lng">—</span>
+                    </div>
+                    <div class="coord-row">
+                        <span class="coord-key">Accuracy</span>
+                        <span class="coord-val" id="acc">—</span>
+                    </div>
+                    <span id="acc-badge" class="accuracy-badge"></span>
+                </div>
+
+                <div class="map-btns">
+                    <a id="gmap-btn" href="#" target="_blank" rel="noopener" class="map-btn map-btn-google">
+                        🗺 Google Maps
+                    </a>
+                    <a id="amap-btn" href="#" target="_blank" rel="noopener" class="map-btn map-btn-apple">
+                        🍎 Apple Maps
+                    </a>
+                </div>
+
+                <button id="copy-btn" onclick="copyCoords()">
+                    📋 Copy Coordinates to Share in Chat
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <!-- STEP 2 · JOIN THE CALL (unlocks after GPS)                -->
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <div class="card card--locked" id="join-card">
+        <div class="card-header">
+            <div class="step-num step-primary" id="join-step-num">2</div>
             <div>
                 <div class="card-title">Join the Live Video Call</div>
-                <div class="card-subtitle">Opens in Google Meet — no account required</div>
+                <div class="card-subtitle" id="join-card-subtitle">Complete Step 1 above to unlock</div>
             </div>
+            <div class="lock-icon" id="join-lock-icon">🔒</div>
         </div>
         <div class="card-body">
             <!-- Normal join state -->
@@ -949,64 +1033,6 @@
                     Tap Here to Join the Call
                 </a>
                 <p class="hold-sub" style="margin-top:10px;">Link opens in Google Meet — no account needed.</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- ══════════════════════════════════════════════════════════ -->
-    <!-- STEP 2 · GPS LOCATION                                      -->
-    <!-- ══════════════════════════════════════════════════════════ -->
-    <div class="card">
-        <div class="card-header">
-            <div class="step-num step-primary" id="gps-step-num">2</div>
-            <div>
-                <div class="card-title">Share Your GPS Location</div>
-                <div class="card-subtitle">Helps your inspector reference the property</div>
-            </div>
-        </div>
-        <div class="card-body">
-            <button id="gps-share-btn" onclick="requestLocation()">
-                <svg viewBox="0 0 24 24">
-                    <path
-                        d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                </svg>
-                Share My Location
-            </button>
-
-            <div id="gps-status"></div>
-
-            <div id="gps-error"></div>
-
-            <div id="gps-result">
-                <div class="coords-box">
-                    <div class="coords-label">📍 GPS Coordinates</div>
-                    <div class="coord-row">
-                        <span class="coord-key">Latitude</span>
-                        <span class="coord-val" id="lat">—</span>
-                    </div>
-                    <div class="coord-row">
-                        <span class="coord-key">Longitude</span>
-                        <span class="coord-val" id="lng">—</span>
-                    </div>
-                    <div class="coord-row">
-                        <span class="coord-key">Accuracy</span>
-                        <span class="coord-val" id="acc">—</span>
-                    </div>
-                    <span id="acc-badge" class="accuracy-badge"></span>
-                </div>
-
-                <div class="map-btns">
-                    <a id="gmap-btn" href="#" target="_blank" rel="noopener" class="map-btn map-btn-google">
-                        🗺 Google Maps
-                    </a>
-                    <a id="amap-btn" href="#" target="_blank" rel="noopener" class="map-btn map-btn-apple">
-                        🍎 Apple Maps
-                    </a>
-                </div>
-
-                <button id="copy-btn" onclick="copyCoords()">
-                    📋 Copy Coordinates to Share in Chat
-                </button>
             </div>
         </div>
     </div>
@@ -1243,12 +1269,23 @@
             document.getElementById('gps-share-btn').style.display = 'none';
             document.getElementById('gps-result').style.display = 'block';
 
-            // Mark step complete
+            // Mark GPS step complete
             const stepNum = document.getElementById('gps-step-num');
             stepNum.className = 'step-num step-done';
             stepNum.textContent = '✓';
 
-            // Unlock the Join button now that GPS is captured
+            // Unlock the Join card visually and functionally
+            const joinCard = document.getElementById('join-card');
+            if (joinCard) {
+                joinCard.classList.add('unlocked');
+                setTimeout(() => joinCard.classList.remove('card--locked'), 400);
+            }
+            const lockIcon = document.getElementById('join-lock-icon');
+            if (lockIcon) lockIcon.textContent = '✅';
+            const joinSubtitle = document.getElementById('join-card-subtitle');
+            if (joinSubtitle) joinSubtitle.textContent = 'Opens in Google Meet — no account required';
+
+            // Unlock the button
             const joinBtn = document.getElementById('join-btn');
             if (joinBtn && joinBtn.classList.contains('disabled')) {
                 joinBtn.classList.remove('disabled');
