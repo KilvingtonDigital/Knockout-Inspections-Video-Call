@@ -104,7 +104,7 @@ export default async function handler(req, res) {
             cardId: `inspection-${Date.now()}`,
             card: {
                 header: {
-                    title: '📞 New Inspection Request',
+                    title: '📞 New Evaluation Request',
                     subtitle: `${date || 'Today'} · ${time || 'now'} CT`,
                     imageType: 'CIRCLE'
                 },
@@ -165,7 +165,7 @@ export default async function handler(req, res) {
         // Fallback to plain text if cardsV2 rejected
         if (!response.ok) {
             const fallback = {
-                text: `📞 *New inspection request* — ${time || 'now'} CT\n📍 *GPS:* ${coordText}\n${accIcon} *Accuracy:* ${accLabel}${mapsUrl ? `\n🗺️ ${mapsUrl}` : ''}\nJoin now: ${MEET_LINK}\n\nTo accept, open: ${BASE_URL}/api/accept?session=${sessionId}&name=Ricky`
+                text: `📞 *New evaluation request* — ${time || 'now'} CT\n📍 *GPS:* ${coordText}\n${accIcon} *Accuracy:* ${accLabel}${mapsUrl ? `\n🗺️ ${mapsUrl}` : ''}\nJoin now: ${MEET_LINK}\n\nTo accept, open: ${BASE_URL}/api/accept?session=${sessionId}&name=Ricky`
             };
             await fetch(webhookUrl, {
                 method: 'POST',

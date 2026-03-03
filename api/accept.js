@@ -49,7 +49,7 @@ export default async function handler(req, res) {
         const webhookUrl = process.env.CHAT_WEBHOOK_URL;
         if (webhookUrl) {
             const payload = {
-                text: `✅ *${name} has accepted this inspection call* — no action needed from others.\nThey're joining Meet now.`
+                text: `✅ *${name} has accepted this evaluation call* — no action needed from others.\nThey're joining Meet now.`
             };
             await fetch(webhookUrl, {
                 method: 'POST',

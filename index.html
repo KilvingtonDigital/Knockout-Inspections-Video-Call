@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="description" content="Knockout Inspections – Join your live virtual inspection call." />
-    <title>Knockout Inspections – Live Virtual Inspection</title>
+    <meta name="description" content="Knockout Inspections – Join your live virtual evaluation call." />
+    <title>Knockout Inspections – Live Virtual Evaluation</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -900,7 +900,7 @@
         </div>
         <div class="brand-text">
             <h1>Knockout Inspections</h1>
-            <p>Virtual Inspection Portal</p>
+            <p>Virtual Evaluation Portal</p>
         </div>
     </div>
 
@@ -910,8 +910,8 @@
             <div class="pulse-dot"></div>
             <span id="hours-label">Checking hours…</span>
         </div>
-        <h2>Your <span>Live Inspection</span><br>Starts Here</h2>
-        <p>Share your location, then tap to join the live call with your inspector. No app needed.</p>
+        <h2>Your <span>Live Evaluation</span><br>Starts Here</h2>
+        <p>Share your location, then tap to join the live call with your evaluator. No app needed.</p>
     </div>
 
     <!-- ══════════════════════════════════════════════════════════ -->
@@ -922,7 +922,7 @@
             <div class="step-num step-primary" id="gps-step-num">1</div>
             <div>
                 <div class="card-title">Share Your GPS Location</div>
-                <div class="card-subtitle">Required first — helps your inspector find the property</div>
+                <div class="card-subtitle">Required first — helps your evaluator find the property</div>
             </div>
         </div>
         <div class="card-body">
@@ -994,11 +994,11 @@
                         <polygon points="23 7 16 12 23 17 23 7"></polygon>
                         <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
                     </svg>
-                    Join Inspection Call
+                    Join Evaluation Call
                 </a>
                 <p class="call-note" id="call-note">
                     <strong>Available Mon–Fri, 8 AM – 5 PM Central.</strong><br>
-                    An inspector will be waiting for you.
+                    An evaluator will be waiting for you.
                 </p>
             </div>
 
@@ -1012,8 +1012,8 @@
                     </svg>
                     <div class="hold-timer" id="hold-timer">2:00</div>
                 </div>
-                <p class="hold-title">Getting your inspector ready…</p>
-                <p class="hold-sub">An inspector has been notified and is joining now.<br>Your call will open in just a
+                <p class="hold-title">Getting your evaluator ready…</p>
+                <p class="hold-sub">An evaluator has been notified and is joining now.<br>Your call will open in just a
                     moment.</p>
                 <div class="hold-dots">
                     <span></span><span></span><span></span>
@@ -1023,7 +1023,7 @@
             <!-- Ready state -->
             <div id="join-ready" style="display:none;">
                 <div class="ready-check">✅</div>
-                <p class="hold-title" style="color:#095731;">Your inspector is ready!</p>
+                <p class="hold-title" style="color:#095731;">Your evaluator is ready!</p>
                 <a id="join-btn-ready" class="ready-btn" href="#" target="_blank" rel="noopener">
                     <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"
                         stroke-linejoin="round">
@@ -1044,13 +1044,13 @@
         <div class="card-header">
             <div class="step-num step-secondary">3</div>
             <div>
-                <div class="card-title">Send a Photo to Your Inspector</div>
+                <div class="card-title">Send a Photo to Your Evaluator</div>
                 <div class="card-subtitle">Optional — use during or after the call</div>
             </div>
         </div>
         <div class="card-body">
             <p class="photo-instruction">
-                Take a photo of anything your inspector needs to see up close.
+                Take a photo of anything your evaluator needs to see up close.
                 <strong>On mobile:</strong> tap Save / Send Photo — your share sheet opens and you can send it directly
                 to the Google Meet chat if you have the Meet app, or save it and attach it from Meet's 📎 clip icon.<br>
                 <strong>On desktop:</strong> the photo downloads — drag it into the Meet chat window.
@@ -1120,7 +1120,7 @@
             if (isOpen) {
                 badge.classList.add('open');
                 badge.classList.remove('closed');
-                label.textContent = 'Inspectors Available Now';
+                label.textContent = 'Evaluators Available Now';
                 joinBtn.href = MEETING_LINK;
                 // GPS must be shared first — start locked
                 joinBtn.classList.add('disabled');
@@ -1326,7 +1326,7 @@
             if (joinBtn && joinBtn.classList.contains('disabled')) {
                 joinBtn.classList.remove('disabled');
                 document.getElementById('call-note').innerHTML =
-                    '<strong>✓ Location captured.</strong> Tap Join Inspection Call above to connect with your inspector.';
+                    '<strong>✓ Location captured.</strong> Tap Join Evaluation Call above to connect with your evaluator.';
             }
         }
 
@@ -1485,8 +1485,8 @@ Try refreshing the page and tapping <strong>Share My Location</strong> again. If
                 try {
                     await navigator.share({
                         files: [file],
-                        title: 'Inspection Photo',
-                        text: 'Photo from Knockout Inspections virtual inspection'
+                        title: 'Evaluation Photo',
+                        text: 'Photo from Knockout Inspections virtual evaluation'
                     });
                 } catch (e) {
                     if (e.name !== 'AbortError') fallbackDownload(file);

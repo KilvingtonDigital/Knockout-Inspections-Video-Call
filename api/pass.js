@@ -51,7 +51,7 @@ export default async function handler(req, res) {
                 card: {
                     header: {
                         title: '🔄 Coverage Needed',
-                        subtitle: 'Inspector passed — first available please accept'
+                        subtitle: 'Evaluator passed — first available please accept'
                     },
                     sections: [
                         {
