@@ -21,6 +21,7 @@ export default async function handler(req, res) {
         GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET ? '✅ set' : '❌ missing',
         CHAT_WEBHOOK_URL: process.env.CHAT_WEBHOOK_URL ? '✅ set' : '❌ missing',
         KV_REST_API_URL: process.env.KV_REST_API_URL ? '✅ set' : '❌ missing',
+        FIREFLIES_API_KEY: process.env.FIREFLIES_API_KEY ? '✅ set' : '❌ missing',
     };
 
     // 2. Check KV connectivity + refresh token

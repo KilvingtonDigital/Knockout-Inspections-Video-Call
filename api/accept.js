@@ -4,7 +4,7 @@
  *
  * Flow:
  * 1. Create a Meet space via Meet API with accessType: OPEN (anyone joins instantly, no host gate)
- * 2. Create a calendar event on automations@goforko.com referencing that space so Otter detects it
+ * 2. Trigger Fireflies bot to join the Meet room (via Fireflies GraphQL API) — bot joins in ~30s
  * 3. Mark session as accepted in KV, store the Meet link
  * 4. Notify team via Google Chat
  * 5. Redirect evaluator to the new Meet room
@@ -13,7 +13,6 @@
 import { kv } from '@vercel/kv';
 
 const EVALUATORS = ['Ricky', 'Hunter', 'Nate'];
-const CALENDAR_ID = 'automations@goforko.com';
 const FALLBACK_MEET = 'https://meet.google.com/vnz-jgvp-ywe';
 
 export default async function handler(req, res) {
@@ -45,8 +44,8 @@ export default async function handler(req, res) {
         opLog.steps.token = accessToken ? '✅ obtained' : '❌ failed — re-auth at /api/auth';
 
         if (accessToken) {
-            // Step 1: Create Meet space with OPEN access (no host required)
-            const { meetingUri, meetingCode, spaceName, error: spaceError } = await createOpenMeetSpace(accessToken);
+            // Step 1: Create Meet space with OPEN access (no host gate)
+            const { meetingUri, error: spaceError } = await createOpenMeetSpace(accessToken);
             opLog.steps.meetSpace = meetingUri
                 ? `✅ created OPEN space → ${meetingUri}`
                 : `❌ failed — ${spaceError || 'unknown'}`;
@@ -55,11 +54,11 @@ export default async function handler(req, res) {
                 meetLink = meetingUri;
                 opLog.meetLink = meetingUri;
 
-                // Step 2: Create calendar event referencing the new space so Otter detects it
-                const { error: calError } = await createCalendarEvent(accessToken, name, meetingUri, meetingCode);
-                opLog.steps.calendarEvent = calError
-                    ? `❌ failed — ${calError}`
-                    : `✅ created on ${CALENDAR_ID}`;
+                // Step 2: Trigger Fireflies bot to join the Meet room
+                const { error: ffError } = await triggerFirefliesBot(meetingUri, name, session);
+                opLog.steps.fireflies = ffError
+                    ? `❌ failed — ${ffError}`
+                    : '✅ bot dispatched — joins in ~30s';
             }
         }
 
@@ -118,8 +117,7 @@ async function getAccessToken() {
 
 /**
  * Creates a Google Meet space with accessType: OPEN via the Meet Spaces API.
- * OPEN = anyone with the link joins instantly, no host admission required.
- * Returns { meetingUri, meetingCode, spaceName } or { error } on failure.
+ * Returns { meetingUri } or { error }.
  */
 async function createOpenMeetSpace(accessToken) {
     const res = await fetch('https://meet.googleapis.com/v2/spaces', {
@@ -135,61 +133,58 @@ async function createOpenMeetSpace(accessToken) {
     }
 
     const space = await res.json();
-    console.log('Meet space created:', JSON.stringify(space));
-
-    const meetingUri = space.meetingUri;
-    const meetingCode = space.meetingCode;
-    const spaceName = space.name; // e.g. "spaces/jQCFfuBOdN5z"
-
-    return { meetingUri, meetingCode, spaceName };
+    console.log('Meet space created:', space.meetingUri);
+    return { meetingUri: space.meetingUri, meetingCode: space.meetingCode, spaceName: space.name };
 }
 
 /**
- * Creates a calendar event on automations@goforko.com referencing the existing Meet space.
- * Using the Meet space's URI in conferenceData so Otter's OtterPilot can detect and join.
+ * Triggers the Fireflies notetaker bot to join a Google Meet room.
+ * Uses the Fireflies GraphQL API — bot joins within ~30 seconds.
+ * Returns { error } on failure or {} on success.
  */
-async function createCalendarEvent(accessToken, evaluatorName, meetingUri, meetingCode) {
-    const now = new Date();
-    const start = new Date(now.getTime() + 3 * 60 * 1000);  // 3 min out — gives Otter time to detect & join
-    const end = new Date(now.getTime() + 33 * 60 * 1000);
+async function triggerFirefliesBot(meetingUri, evaluatorName, sessionId) {
+    const apiKey = process.env.FIREFLIES_API_KEY;
+    if (!apiKey) {
+        console.warn('FIREFLIES_API_KEY not set — skipping bot dispatch');
+        return { error: 'FIREFLIES_API_KEY not set in Vercel env vars' };
+    }
 
-    const event = {
-        summary: `KO Evaluation — ${evaluatorName}`,
-        description: `Live evaluation call accepted by ${evaluatorName}. Auto-recorded via Otter.\n\nJoin: ${meetingUri}`,
-        start: { dateTime: start.toISOString(), timeZone: 'America/Chicago' },
-        end: { dateTime: end.toISOString(), timeZone: 'America/Chicago' },
-        location: meetingUri,
-        conferenceData: {
-            conferenceId: meetingCode,
-            conferenceSolution: {
-                key: { type: 'hangoutsMeet' },
-                name: 'Google Meet',
-                iconUri: 'https://fonts.gstatic.com/s/i/productlogos/meet_2020q4/v1/web-512dp/logo_meet_2020q4_color_2x_web_512dp.png',
-            },
-            entryPoints: [{
-                entryPointType: 'video',
-                uri: meetingUri,
-                label: 'Join Google Meet',
-            }],
-        },
+    const mutation = `
+        mutation AddToLiveMeeting($input: AddToLiveMeetingInput!) {
+            addToLiveMeeting(input: $input)
+        }
+    `;
+
+    const variables = {
+        input: {
+            client_reference_id: sessionId,
+            meeting_link: meetingUri,
+            title: `KO Evaluation — ${evaluatorName}`,
+        }
     };
 
-    const calRes = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events?sendUpdates=none`,
-        {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify(event),
-        }
-    );
+    const res = await fetch('https://api.fireflies.ai/graphql', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: mutation, variables }),
+    });
 
-    if (!calRes.ok) {
-        const errText = await calRes.text();
-        console.error('Calendar API error:', errText);
+    if (!res.ok) {
+        const errText = await res.text();
+        console.error('Fireflies API error:', errText);
         return { error: errText };
     }
 
-    const created = await calRes.json();
-    console.log('Calendar event created, hangoutLink:', created.hangoutLink || 'not set');
-    return { hangoutLink: created.hangoutLink };
+    const result = await res.json();
+    if (result.errors) {
+        const errMsg = result.errors.map(e => e.message).join('; ');
+        console.error('Fireflies GraphQL error:', errMsg);
+        return { error: errMsg };
+    }
+
+    console.log('Fireflies bot dispatched to:', meetingUri);
+    return {};
 }
