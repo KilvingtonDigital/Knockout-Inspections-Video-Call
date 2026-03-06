@@ -1,13 +1,13 @@
 /**
  * api/accept.js
  * Evaluator taps "Accept — [Name]" in Google Chat → opens this URL (GET).
+ *
  * Flow:
- * 1. Creates a calendar event with conferenceData.createRequest (Google auto-assigns a Meet room)
- *    → This gives the event a proper `hangoutLink` that Otter's OtterPilot detects
- * 2. Immediately patches the new Meet space to accessType: OPEN (no host required to admit people)
- * 3. Marks session as accepted in Upstash Redis, stores the Meet link
- * 4. Notifies the team via Google Chat
- * 5. Redirects evaluator to the new Meet room
+ * 1. Create a Meet space via Meet API with accessType: OPEN (anyone joins instantly, no host gate)
+ * 2. Create a calendar event on automations@goforko.com referencing that space so Otter detects it
+ * 3. Mark session as accepted in KV, store the Meet link
+ * 4. Notify team via Google Chat
+ * 5. Redirect evaluator to the new Meet room
  */
 
 import { kv } from '@vercel/kv';
@@ -38,41 +38,35 @@ export default async function handler(req, res) {
             </body></html>`);
         }
 
-        // Operation log — stored in KV so /api/debug can show exactly what happened
+        // Operation log for /api/debug
         const opLog = { ts: new Date().toISOString(), evaluator: name, steps: {} };
 
         const accessToken = await getAccessToken();
-        opLog.steps.token = accessToken ? '✅ obtained' : '❌ failed — check GOOGLE_CLIENT_ID/SECRET or re-auth at /api/auth';
+        opLog.steps.token = accessToken ? '✅ obtained' : '❌ failed — re-auth at /api/auth';
 
         if (accessToken) {
-            // Step 1: Create calendar event with conferenceData.createRequest
-            const { hangoutLink, spaceName, error: calError } = await createCalendarEventWithMeet(accessToken, name);
-            opLog.steps.calendarEvent = hangoutLink
-                ? `✅ created → ${hangoutLink}`
-                : `❌ failed — ${calError || 'unknown error'}`;
+            // Step 1: Create Meet space with OPEN access (no host required)
+            const { meetingUri, meetingCode, spaceName, error: spaceError } = await createOpenMeetSpace(accessToken);
+            opLog.steps.meetSpace = meetingUri
+                ? `✅ created OPEN space → ${meetingUri}`
+                : `❌ failed — ${spaceError || 'unknown'}`;
 
-            if (hangoutLink) {
-                meetLink = hangoutLink;
-                opLog.meetLink = hangoutLink;
+            if (meetingUri) {
+                meetLink = meetingUri;
+                opLog.meetLink = meetingUri;
 
-                // Step 2: Patch the Meet space to OPEN
-                if (spaceName) {
-                    try {
-                        await patchSpaceToOpen(accessToken, spaceName);
-                        opLog.steps.spacePatch = `✅ patched to OPEN (${spaceName})`;
-                    } catch (err) {
-                        opLog.steps.spacePatch = `❌ failed — ${err.message}`;
-                    }
-                } else {
-                    opLog.steps.spacePatch = '⚠️ skipped — no spaceName from calendar response';
-                }
+                // Step 2: Create calendar event referencing the new space so Otter detects it
+                const { error: calError } = await createCalendarEvent(accessToken, name, meetingUri, meetingCode);
+                opLog.steps.calendarEvent = calError
+                    ? `❌ failed — ${calError}`
+                    : `✅ created on ${CALENDAR_ID}`;
             }
         }
 
-        // Store op log for debugging (expires in 2 hours)
+        // Store op log for /api/debug (expires 2 hrs)
         await kv.set('debug:last-accept', opLog, { ex: 7200 }).catch(() => { });
 
-        // Step 3: Mark session as accepted
+        // Mark session as accepted
         await kv.set(key, {
             ...(data || {}),
             accepted: true,
@@ -80,7 +74,7 @@ export default async function handler(req, res) {
             meetLink,
         }, { ex: 3600 });
 
-        // Step 4: Notify team via Google Chat
+        // Notify team via Google Chat
         const webhookUrl = process.env.CHAT_WEBHOOK_URL;
         if (webhookUrl) {
             await fetch(webhookUrl, {
@@ -96,7 +90,6 @@ export default async function handler(req, res) {
         console.error('Accept error:', err);
     }
 
-    // Step 5: Redirect evaluator to the Meet room
     res.writeHead(302, { Location: meetLink });
     res.end();
 }
@@ -124,32 +117,64 @@ async function getAccessToken() {
 }
 
 /**
- * Creates a 30-min calendar event with conferenceData.createRequest.
- * Google assigns a new Meet room and attaches a proper hangoutLink to the event.
- * Otter's OtterPilot reads hangoutLink to detect and join the meeting.
- * Returns { hangoutLink, spaceName } or empty object on failure.
+ * Creates a Google Meet space with accessType: OPEN via the Meet Spaces API.
+ * OPEN = anyone with the link joins instantly, no host admission required.
+ * Returns { meetingUri, meetingCode, spaceName } or { error } on failure.
  */
-async function createCalendarEventWithMeet(accessToken, evaluatorName) {
+async function createOpenMeetSpace(accessToken) {
+    const res = await fetch('https://meet.googleapis.com/v2/spaces', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config: { accessType: 'OPEN' } }),
+    });
+
+    if (!res.ok) {
+        const errText = await res.text();
+        console.error('Meet Spaces API error:', errText);
+        return { error: errText };
+    }
+
+    const space = await res.json();
+    console.log('Meet space created:', JSON.stringify(space));
+
+    const meetingUri = space.meetingUri;
+    const meetingCode = space.meetingCode;
+    const spaceName = space.name; // e.g. "spaces/jQCFfuBOdN5z"
+
+    return { meetingUri, meetingCode, spaceName };
+}
+
+/**
+ * Creates a calendar event on automations@goforko.com referencing the existing Meet space.
+ * Using the Meet space's URI in conferenceData so Otter's OtterPilot can detect and join.
+ */
+async function createCalendarEvent(accessToken, evaluatorName, meetingUri, meetingCode) {
     const now = new Date();
     const end = new Date(now.getTime() + 30 * 60 * 1000);
-    const reqId = `ko-eval-${Date.now()}`;
 
     const event = {
         summary: `KO Evaluation — ${evaluatorName}`,
-        description: `Live evaluation call accepted by ${evaluatorName}. Auto-recorded via Otter.`,
+        description: `Live evaluation call accepted by ${evaluatorName}. Auto-recorded via Otter.\n\nJoin: ${meetingUri}`,
         start: { dateTime: now.toISOString(), timeZone: 'America/Chicago' },
         end: { dateTime: end.toISOString(), timeZone: 'America/Chicago' },
+        location: meetingUri,
         conferenceData: {
-            createRequest: {
-                requestId: reqId,
-                conferenceSolutionKey: { type: 'hangoutsMeet' },
-            }
+            conferenceId: meetingCode,
+            conferenceSolution: {
+                key: { type: 'hangoutsMeet' },
+                name: 'Google Meet',
+                iconUri: 'https://fonts.gstatic.com/s/i/productlogos/meet_2020q4/v1/web-512dp/logo_meet_2020q4_color_2x_web_512dp.png',
+            },
+            entryPoints: [{
+                entryPointType: 'video',
+                uri: meetingUri,
+                label: 'Join Google Meet',
+            }],
         },
     };
 
-    // conferenceDataVersion=1 is required for createRequest to take effect
     const calRes = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events?conferenceDataVersion=1&sendUpdates=none`,
+        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events?sendUpdates=none`,
         {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
@@ -164,28 +189,6 @@ async function createCalendarEventWithMeet(accessToken, evaluatorName) {
     }
 
     const created = await calRes.json();
-    const hangoutLink = created.hangoutLink;                          // e.g. https://meet.google.com/abc-defg-hij
-    const confId = created.conferenceData?.conferenceId;         // e.g. "abc-defg-hij"
-    const spaceName = confId ? `spaces/${confId}` : null; // Keep dashes: spaces/abc-defg-hij
-
-    console.log(`Calendar event created → hangoutLink: ${hangoutLink}, spaceName: ${spaceName}`);
-    return { hangoutLink: hangoutLink || null, spaceName };
-}
-
-/**
- * Updates the Meet space to accessType: OPEN.
- * OPEN = anyone with the link joins instantly, no host admission required.
- */
-async function patchSpaceToOpen(accessToken, spaceName) {
-    const res = await fetch(`https://meet.googleapis.com/v2/${spaceName}?updateMask=config.accessType`, {
-        method: 'PATCH',
-        headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ config: { accessType: 'OPEN' } }),
-    });
-
-    if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(errText);
-    }
-    console.log(`Meet space ${spaceName} patched to OPEN ✅`);
+    console.log('Calendar event created, hangoutLink:', created.hangoutLink || 'not set');
+    return { hangoutLink: created.hangoutLink };
 }
