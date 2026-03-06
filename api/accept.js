@@ -38,24 +38,39 @@ export default async function handler(req, res) {
             </body></html>`);
         }
 
+        // Operation log — stored in KV so /api/debug can show exactly what happened
+        const opLog = { ts: new Date().toISOString(), evaluator: name, steps: {} };
+
         const accessToken = await getAccessToken();
+        opLog.steps.token = accessToken ? '✅ obtained' : '❌ failed — check GOOGLE_CLIENT_ID/SECRET or re-auth at /api/auth';
 
         if (accessToken) {
             // Step 1: Create calendar event with conferenceData.createRequest
-            // Google auto-creates a Meet room and sets hangoutLink on the event → Otter detects this
-            const { hangoutLink, spaceName } = await createCalendarEventWithMeet(accessToken, name);
+            const { hangoutLink, spaceName, error: calError } = await createCalendarEventWithMeet(accessToken, name);
+            opLog.steps.calendarEvent = hangoutLink
+                ? `✅ created → ${hangoutLink}`
+                : `❌ failed — ${calError || 'unknown error'}`;
 
             if (hangoutLink) {
                 meetLink = hangoutLink;
+                opLog.meetLink = hangoutLink;
 
-                // Step 2: Patch the Meet space to OPEN so anyone with the link can join (no host required)
+                // Step 2: Patch the Meet space to OPEN
                 if (spaceName) {
-                    await patchSpaceToOpen(accessToken, spaceName).catch((err) => {
-                        console.warn('Space patch failed (non-fatal — room still works):', err.message);
-                    });
+                    try {
+                        await patchSpaceToOpen(accessToken, spaceName);
+                        opLog.steps.spacePatch = `✅ patched to OPEN (${spaceName})`;
+                    } catch (err) {
+                        opLog.steps.spacePatch = `❌ failed — ${err.message}`;
+                    }
+                } else {
+                    opLog.steps.spacePatch = '⚠️ skipped — no spaceName from calendar response';
                 }
             }
         }
+
+        // Store op log for debugging (expires in 2 hours)
+        await kv.set('debug:last-accept', opLog, { ex: 7200 }).catch(() => { });
 
         // Step 3: Mark session as accepted
         await kv.set(key, {
@@ -145,7 +160,7 @@ async function createCalendarEventWithMeet(accessToken, evaluatorName) {
     if (!calRes.ok) {
         const errText = await calRes.text();
         console.error('Calendar API error:', errText);
-        return {};
+        return { error: errText };
     }
 
     const created = await calRes.json();
