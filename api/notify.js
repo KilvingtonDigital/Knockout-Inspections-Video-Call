@@ -36,7 +36,7 @@ export default async function handler(req, res) {
     const host = req.headers['x-forwarded-host'] || req.headers.host;
     const BASE_URL = `${proto}://${host}`;
 
-    const { sessionId, lat, lng, acc, time, date, address, company, phone } = req.body || {};
+    const { sessionId, lat, lng, acc, time, date, address, company, phone, isInternal, staffName } = req.body || {};
 
     // ── Store session in Redis ──────────────────────────────────
     if (sessionId) {
@@ -52,6 +52,8 @@ export default async function handler(req, res) {
                 address: address || null,
                 company: company || null,
                 phone: phone || null,
+                isInternal: isInternal || false,
+                staffName: staffName || null,
             }, { ex: 3600 }); // 1-hour TTL
         } catch (err) {
             console.error('Redis store error:', err.message);
@@ -101,7 +103,39 @@ export default async function handler(req, res) {
         }
     };
 
-    // ── Google Chat Card (cardsV2) ──────────────────────────────
+    // ── Build Chat message ──────────────────────────────────────
+    // Internal staff requests use a simpler card
+    if (isInternal) {
+        const staffCard = {
+            cardsV2: [{
+                cardId: `staff-${Date.now()}`,
+                card: {
+                    header: {
+                        title: `🏢 Internal Support Request`,
+                        subtitle: `${staffName || 'A staff member'} needs assistance · ${time || 'now'} CT`,
+                        imageType: 'CIRCLE'
+                    },
+                    sections: [{
+                        header: '👤 Accept to help',
+                        widgets: [{ buttonList: { buttons: acceptButtons } }]
+                    }]
+                }
+            }]
+        };
+        try {
+            await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(staffCard)
+            });
+            return res.status(200).json({ ok: true });
+        } catch (err) {
+            console.error('Staff webhook error:', err);
+            return res.status(200).json({ ok: false });
+        }
+    }
+
+    // ── Google Chat Card (cardsV2) — customer request ───────────
     const card = {
         cardsV2: [{
             cardId: `inspection-${Date.now()}`,

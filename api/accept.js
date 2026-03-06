@@ -54,11 +54,15 @@ export default async function handler(req, res) {
                 meetLink = meetingUri;
                 opLog.meetLink = meetingUri;
 
-                // Step 2: Trigger Fireflies bot to join the Meet room
-                const { error: ffError } = await triggerFirefliesBot(meetingUri, name, session);
-                opLog.steps.fireflies = ffError
-                    ? `❌ failed — ${ffError}`
-                    : '✅ bot dispatched — joins in ~30s';
+                // Step 2: Trigger Fireflies bot — skip for internal staff calls
+                if (data?.isInternal) {
+                    opLog.steps.fireflies = '⏭️ skipped — internal staff call';
+                } else {
+                    const { error: ffError } = await triggerFirefliesBot(meetingUri, name, session);
+                    opLog.steps.fireflies = ffError
+                        ? `❌ failed — ${ffError}`
+                        : '✅ bot dispatched — joins in ~30s';
+                }
             }
         }
 

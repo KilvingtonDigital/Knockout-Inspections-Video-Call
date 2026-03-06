@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="KO Staff Help" />
+    <title>KO Inspections — Staff Support</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --red: #bd1e2e;
+            --red-dark: #98111f;
+            --navy: #1a1a2e;
+            --bg: #f1f5f9;
+            --card-bg: #ffffff;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --shadow: 0 4px 24px rgba(0, 0, 0, .08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--navy);
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ─── Brand bar ─────────────────────────────────────────── */
+        .brand-bar {
+            background: var(--navy);
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-shield svg {
+            width: 28px;
+            height: 28px;
+            fill: var(--red);
+        }
+
+        .brand-text h1 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1.2;
+        }
+
+        .brand-text p {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            letter-spacing: 0.04em;
+        }
+
+        /* ─── Main content ──────────────────────────────────────── */
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px;
+            gap: 20px;
+        }
+
+        /* ─── Card ──────────────────────────────────────────────── */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 28px 24px;
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .card-icon {
+            width: 56px;
+            height: 56px;
+            background: #fff5f5;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+        }
+
+        .card-icon svg {
+            width: 28px;
+            height: 28px;
+            fill: var(--red);
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 6px;
+        }
+
+        .card-subtitle {
+            font-size: 0.82rem;
+            color: #64748b;
+            text-align: center;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        /* ─── Name field ────────────────────────────────────────── */
+        .name-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 20px;
+        }
+
+        .name-field label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .name-field input {
+            width: 100%;
+            padding: 13px 16px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 1rem;
+            color: var(--navy);
+            background: #f8fafc;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .name-field input:focus {
+            border-color: var(--red);
+            background: #fff;
+        }
+
+        .name-field input.field-error {
+            border-color: var(--red);
+            background: #fff5f5;
+        }
+
+        /* ─── Help button ───────────────────────────────────────── */
+        .help-btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--red);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .help-btn:hover {
+            background: var(--red-dark);
+        }
+
+        .help-btn:active {
+            transform: scale(0.98);
+        }
+
+        .help-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .help-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: #fff;
+        }
+
+        /* ─── States ────────────────────────────────────────────── */
+        #state-request {
+            display: block;
+        }
+
+        #state-waiting {
+            display: none;
+        }
+
+        #state-ready {
+            display: none;
+        }
+
+        /* ─── Waiting state ─────────────────────────────────────── */
+        .waiting-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 16px;
+            border-radius: 50%;
+            border: 4px solid #e2e8f0;
+            border-top-color: var(--red);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .waiting-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .waiting-sub {
+            font-size: 0.82rem;
+            color: #64748b;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        /* ─── Ready state ───────────────────────────────────────── */
+        .ready-icon {
+            width: 64px;
+            height: 64px;
+            background: #f0fdf4;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+        }
+
+        .ready-icon svg {
+            width: 32px;
+            height: 32px;
+            fill: #16a34a;
+        }
+
+        .ready-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-align: center;
+            color: #16a34a;
+            margin-bottom: 8px;
+        }
+
+        .ready-sub {
+            font-size: 0.82rem;
+            color: #64748b;
+            text-align: center;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .join-btn {
+            width: 100%;
+            padding: 16px;
+            background: #16a34a;
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: background 0.2s;
+            text-decoration: none;
+        }
+
+        .join-btn:hover {
+            background: #15803d;
+        }
+
+        /* ─── Error ─────────────────────────────────────────────── */
+        .err-msg {
+            display: none;
+            background: #fff5f5;
+            border: 1px solid #fecaca;
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            font-size: 0.82rem;
+            color: var(--red);
+            margin-top: 12px;
+            text-align: center;
+        }
+
+        .err-msg.visible {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ── Brand bar ─────────────────────────────────────────────── -->
+    <div class="brand-bar">
+        <div class="brand-shield">
+            <svg viewBox="0 0 24 24">
+                <path
+                    d="M12 2L3 6v5c0 5.25 3.75 10.15 9 11.35C17.25 21.15 21 16.25 21 11V6l-9-4zm-1.5 13.5l-3-3 1.41-1.41 1.59 1.58 4.09-4.08 1.41 1.41-5.5 5.5z" />
+            </svg>
+        </div>
+        <div class="brand-text">
+            <h1>Knockout Inspections</h1>
+            <p>STAFF SUPPORT PORTAL</p>
+        </div>
+    </div>
+
+    <!-- ── Content ─────────────────────────────────────────────── -->
+    <div class="content">
+        <div class="card">
+
+            <!-- ── State: Request ─────────────────────────────── -->
+            <div id="state-request">
+                <div class="card-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path
+                            d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
+                    </svg>
+                </div>
+                <div class="card-title">Need Help?</div>
+                <div class="card-subtitle">Enter your name and tap the button — a team lead will join you on a video
+                    call.</div>
+
+                <div class="name-field">
+                    <label for="staff-name">Your Name</label>
+                    <input type="text" id="staff-name" placeholder="e.g. Hunter" autocomplete="given-name" />
+                </div>
+
+                <button class="help-btn" id="help-btn" onclick="requestHelp()">
+                    <svg viewBox="0 0 24 24">
+                        <path
+                            d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z" />
+                    </svg>
+                    Get Help Now
+                </button>
+
+                <div class="err-msg" id="err-msg"></div>
+            </div>
+
+            <!-- ── State: Waiting ─────────────────────────────── -->
+            <div id="state-waiting">
+                <div class="waiting-icon"></div>
+                <div class="waiting-title">Connecting you now…</div>
+                <div class="waiting-sub" id="waiting-sub">
+                    Your request was sent. A team lead will accept shortly and you'll be connected automatically.
+                </div>
+            </div>
+
+            <!-- ── State: Ready ───────────────────────────────── -->
+            <div id="state-ready">
+                <div class="ready-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                    </svg>
+                </div>
+                <div class="ready-title">You're connected!</div>
+                <div class="ready-sub">Your team lead is ready. Tap below to join the call.</div>
+                <a id="join-link" href="#" class="join-btn">
+                    <svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:#fff">
+                        <path
+                            d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z" />
+                    </svg>
+                    Join the Call
+                </a>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // ── Session & name persistence ─────────────────────────────
+        const SESSION_ID = (crypto?.randomUUID?.()) || (Math.random().toString(36).slice(2) + Date.now().toString(36));
+
+        // Remember name across visits
+        const nameInput = document.getElementById('staff-name');
+        const savedName = localStorage.getItem('ko_staff_name');
+        if (savedName) nameInput.value = savedName;
+        nameInput.addEventListener('input', () => {
+            localStorage.setItem('ko_staff_name', nameInput.value.trim());
+        });
+
+        // ── Request help ───────────────────────────────────────────
+        async function requestHelp() {
+            const name = nameInput.value.trim();
+            const errMsg = document.getElementById('err-msg');
+
+            // Validate name
+            if (!name) {
+                nameInput.classList.add('field-error');
+                errMsg.textContent = 'Please enter your name before continuing.';
+                errMsg.classList.add('visible');
+                return;
+            }
+            nameInput.classList.remove('field-error');
+            errMsg.classList.remove('visible');
+
+            const btn = document.getElementById('help-btn');
+            btn.disabled = true;
+
+            const now = new Date().toLocaleString('en-US', {
+                timeZone: 'America/Chicago',
+                hour: 'numeric', minute: '2-digit', hour12: true
+            });
+            const dateStr = new Date().toLocaleDateString('en-US', {
+                timeZone: 'America/Chicago',
+                weekday: 'short', month: 'short', day: 'numeric'
+            });
+
+            try {
+                await fetch('/api/notify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionId: SESSION_ID,
+                        time: now,
+                        date: dateStr,
+                        isInternal: true,
+                        staffName: name,
+                    })
+                });
+
+                // Switch to waiting state
+                document.getElementById('state-request').style.display = 'none';
+                document.getElementById('state-waiting').style.display = 'block';
+
+                // Save name for next time
+                localStorage.setItem('ko_staff_name', name);
+
+                // Start polling
+                startPolling();
+
+            } catch (err) {
+                btn.disabled = false;
+                errMsg.textContent = 'Failed to send request. Please check your connection.';
+                errMsg.classList.add('visible');
+            }
+        }
+
+        // ── Poll for acceptance ────────────────────────────────────
+        let pollTimer = null;
+
+        function startPolling() {
+            pollTimer = setInterval(async () => {
+                try {
+                    const r = await fetch(`/api/status?session=${SESSION_ID}`);
+                    if (!r.ok) return;
+                    const data = await r.json();
+                    if (data.accepted && data.meetLink) {
+                        clearInterval(pollTimer);
+                        showReady(data.meetLink, data.acceptedBy);
+                    }
+                } catch { /* ignore */ }
+            }, 3000);
+
+            // Give up after 10 minutes
+            setTimeout(() => {
+                clearInterval(pollTimer);
+                document.getElementById('state-waiting').style.display = 'none';
+                document.getElementById('state-request').style.display = 'block';
+                document.getElementById('help-btn').disabled = false;
+                const errMsg = document.getElementById('err-msg');
+                errMsg.textContent = 'No one responded. Please try again or contact your team directly.';
+                errMsg.classList.add('visible');
+            }, 10 * 60 * 1000);
+        }
+
+        function showReady(meetLink, acceptedBy) {
+            document.getElementById('state-waiting').style.display = 'none';
+            const readyDiv = document.getElementById('state-ready');
+            readyDiv.style.display = 'block';
+            document.getElementById('join-link').href = meetLink;
+            if (acceptedBy) {
+                document.querySelector('.ready-sub').textContent = `${acceptedBy} is ready for you. Tap below to join the call.`;
+            }
+
+            // Auto-open on mobile after a brief moment
+            setTimeout(() => window.location.href = meetLink, 1500);
+        }
+    </script>
+
+</body>
+
+</html>
