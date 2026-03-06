@@ -119,22 +119,14 @@ async function createCalendarEvent(req, evaluatorName) {
 
     const event = {
         summary: `KO Evaluation — ${evaluatorName}`,
-        description: `Live evaluation call accepted by ${evaluatorName}. Recorded automatically via Otter.`,
+        description: `Live evaluation call accepted by ${evaluatorName}.\n\nJoin here: ${MEET_LINK}`,
         start: { dateTime: start.toISOString(), timeZone: 'America/Chicago' },
         end: { dateTime: end.toISOString(), timeZone: 'America/Chicago' },
+        location: MEET_LINK,
         attendees: [
             { email: 'automations@goforko.com' },
-            { email: 'notetaker@otter.ai' }  // Direct Otter invite — joins immediately
+            { email: 'notetaker@otter.ai' }
         ],
-        conferenceData: {
-            conferenceSolution: { key: { type: 'hangoutsMeet' } },
-            entryPoints: [{
-                entryPointType: 'video',
-                uri: MEET_LINK,
-                label: 'Join Google Meet'
-            }]
-        },
-        location: MEET_LINK,
     };
 
     const calRes = await fetch(
