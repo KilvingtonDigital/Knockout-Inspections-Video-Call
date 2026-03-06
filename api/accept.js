@@ -150,12 +150,13 @@ async function createOpenMeetSpace(accessToken) {
  */
 async function createCalendarEvent(accessToken, evaluatorName, meetingUri, meetingCode) {
     const now = new Date();
-    const end = new Date(now.getTime() + 30 * 60 * 1000);
+    const start = new Date(now.getTime() + 3 * 60 * 1000);  // 3 min out — gives Otter time to detect & join
+    const end = new Date(now.getTime() + 33 * 60 * 1000);
 
     const event = {
         summary: `KO Evaluation — ${evaluatorName}`,
         description: `Live evaluation call accepted by ${evaluatorName}. Auto-recorded via Otter.\n\nJoin: ${meetingUri}`,
-        start: { dateTime: now.toISOString(), timeZone: 'America/Chicago' },
+        start: { dateTime: start.toISOString(), timeZone: 'America/Chicago' },
         end: { dateTime: end.toISOString(), timeZone: 'America/Chicago' },
         location: meetingUri,
         conferenceData: {
