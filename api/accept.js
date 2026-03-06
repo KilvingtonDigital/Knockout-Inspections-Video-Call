@@ -150,14 +150,12 @@ async function triggerFirefliesBot(meetingUri, evaluatorName, sessionId) {
     }
 
     const mutation = `
-        mutation AddToLiveMeeting($meeting_link: String!, $title: String, $client_reference_id: String) {
+        mutation AddToLiveMeeting($meeting_link: String!, $title: String) {
             addToLiveMeeting(
                 meeting_link: $meeting_link,
-                title: $title,
-                client_reference_id: $client_reference_id
+                title: $title
             ) {
-                id
-                title
+                __typename
             }
         }
     `;
@@ -165,7 +163,6 @@ async function triggerFirefliesBot(meetingUri, evaluatorName, sessionId) {
     const variables = {
         meeting_link: meetingUri,
         title: `KO Evaluation — ${evaluatorName}`,
-        client_reference_id: sessionId,
     };
 
     const res = await fetch('https://api.fireflies.ai/graphql', {
