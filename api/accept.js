@@ -151,7 +151,7 @@ async function createCalendarEventWithMeet(accessToken, evaluatorName) {
     const created = await calRes.json();
     const hangoutLink = created.hangoutLink;                          // e.g. https://meet.google.com/abc-defg-hij
     const confId = created.conferenceData?.conferenceId;         // e.g. "abc-defg-hij"
-    const spaceName = confId ? `spaces/${confId.replace(/-/g, '')}` : null; // Meet API space name format
+    const spaceName = confId ? `spaces/${confId}` : null; // Keep dashes: spaces/abc-defg-hij
 
     console.log(`Calendar event created → hangoutLink: ${hangoutLink}, spaceName: ${spaceName}`);
     return { hangoutLink: hangoutLink || null, spaceName };
