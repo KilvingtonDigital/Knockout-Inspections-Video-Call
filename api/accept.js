@@ -138,7 +138,7 @@ async function createCalendarEvent(req, evaluatorName) {
     };
 
     const calRes = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events?sendUpdates=all`,
+        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events?sendUpdates=externalOnly`,
         {
             method: 'POST',
             headers: {
