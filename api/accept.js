@@ -13,7 +13,7 @@
 import { kv } from '@vercel/kv';
 
 const EVALUATORS = ['Ricky', 'Hunter', 'Nate'];
-const CALENDAR_ID = 'ricky@goforko.com'; // Otter is connected to this calendar
+const CALENDAR_ID = 'automations@goforko.com'; // Dedicated automation account — Otter watches this calendar
 const FALLBACK_MEET = 'https://meet.google.com/vnz-jgvp-ywe'; // used if Calendar API fails
 
 export default async function handler(req, res) {
