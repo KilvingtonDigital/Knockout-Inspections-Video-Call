@@ -112,14 +112,15 @@ async function createCalendarEvent(req, evaluatorName) {
         throw new Error(`Token refresh failed: ${JSON.stringify(tokenData)}`);
     }
 
-    // Build event — starts now, ends in 30 minutes
+    // Build event — starts 1 min from now (gives Otter time to process the invite)
     const now = new Date();
-    const end = new Date(now.getTime() + 30 * 60 * 1000);
+    const start = new Date(now.getTime() + 1 * 60 * 1000);
+    const end = new Date(now.getTime() + 31 * 60 * 1000);
 
     const event = {
         summary: `KO Evaluation — ${evaluatorName}`,
         description: `Live evaluation call accepted by ${evaluatorName}. Recorded automatically via Otter.`,
-        start: { dateTime: now.toISOString(), timeZone: 'America/Chicago' },
+        start: { dateTime: start.toISOString(), timeZone: 'America/Chicago' },
         end: { dateTime: end.toISOString(), timeZone: 'America/Chicago' },
         attendees: [
             { email: 'automations@goforko.com' },
@@ -137,7 +138,7 @@ async function createCalendarEvent(req, evaluatorName) {
     };
 
     const calRes = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events`,
+        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events?sendUpdates=all`,
         {
             method: 'POST',
             headers: {
