@@ -121,6 +121,10 @@ async function createCalendarEvent(req, evaluatorName) {
         description: `Live evaluation call accepted by ${evaluatorName}. Recorded automatically via Otter.`,
         start: { dateTime: now.toISOString(), timeZone: 'America/Chicago' },
         end: { dateTime: end.toISOString(), timeZone: 'America/Chicago' },
+        attendees: [
+            { email: 'automations@goforko.com' },
+            { email: 'notetaker@otter.ai' }  // Direct Otter invite — joins immediately
+        ],
         conferenceData: {
             conferenceSolution: { key: { type: 'hangoutsMeet' } },
             entryPoints: [{
