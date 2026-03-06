@@ -1199,18 +1199,19 @@
                     if (data.accepted) {
                         clearInterval(holdInterval);
                         clearInterval(statusPoll);
-                        showInspectorReady(data.acceptedBy);
+                        showInspectorReady(data.acceptedBy, data.meetLink);
                     }
                 } catch (_) { /* non-fatal, keep waiting */ }
             }, 3000);
         }
 
-        function showInspectorReady(acceptedBy) {
+        function showInspectorReady(acceptedBy, meetLink) {
             document.getElementById('join-hold').style.display = 'none';
             document.getElementById('join-ready').style.display = 'block';
-            // Wire the real Meet link onto the ready button
-            document.getElementById('join-btn-ready').href = MEETING_LINK;
-            // Show inspector name if we have one
+            // Use the per-call Meet room if provided, otherwise fall back to the default
+            const roomLink = meetLink || MEETING_LINK;
+            document.getElementById('join-btn-ready').href = roomLink;
+            // Show evaluator name if we have one
             if (acceptedBy) {
                 const title = document.querySelector('#join-ready .hold-title');
                 if (title) title.textContent = `✅ ${acceptedBy} is ready for your call!`;

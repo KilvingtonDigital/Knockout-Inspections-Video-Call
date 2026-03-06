@@ -21,7 +21,8 @@ export default async function handler(req, res) {
 
         return res.status(200).json({
             accepted: data?.accepted || false,
-            acceptedBy: data?.acceptedBy || null
+            acceptedBy: data?.acceptedBy || null,
+            meetLink: data?.meetLink || null,
         });
     } catch (err) {
         // If Redis is not yet configured or is down, return "not accepted"

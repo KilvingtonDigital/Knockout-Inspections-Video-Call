@@ -1,17 +1,20 @@
 /**
  * api/accept.js
  * Evaluator taps "Accept — [Name]" in Google Chat → opens this URL (GET).
- * 1. Marks session as accepted in Upstash Redis
- * 2. Sends "✅ [Name] has accepted" to Google Chat
- * 3. Creates a 30-min Google Calendar event with the Meet link → Otter auto-joins
- * 4. Redirects evaluator's browser directly into Google Meet
+ * 1. Creates a fresh Google Meet room via Calendar API (new room per call)
+ * 2. Marks session as accepted in Upstash Redis, stores the new Meet link
+ * 3. Sends "✅ [Name] has accepted" to Google Chat
+ * 4. Redirects evaluator directly into the new Meet room
+ *
+ * The new Meet link is stored in KV so /api/status can return it
+ * and the customer's browser redirects to the same room.
  */
 
 import { kv } from '@vercel/kv';
 
-const MEET_LINK = 'https://meet.google.com/vnz-jgvp-ywe';
-const INSPECTORS = ['Ricky', 'Hunter', 'Nate'];
-const CALENDAR_ID = 'automations@goforko.com'; // Dedicated automation account calendar
+const EVALUATORS = ['Ricky', 'Hunter', 'Nate'];
+const CALENDAR_ID = 'ricky@goforko.com'; // Otter is connected to this calendar
+const FALLBACK_MEET = 'https://meet.google.com/vnz-jgvp-ywe'; // used if Calendar API fails
 
 export default async function handler(req, res) {
     const { session, name } = req.query;
@@ -20,82 +23,82 @@ export default async function handler(req, res) {
         return res.status(400).send('Missing session or name parameter.');
     }
 
-    // Validate evaluator name (prevent spoofing)
-    if (!INSPECTORS.includes(name)) {
+    if (!EVALUATORS.includes(name)) {
         return res.status(400).send('Unknown evaluator name.');
     }
+
+    let meetLink = FALLBACK_MEET;
 
     try {
         const key = `session:${session}`;
         const data = await kv.get(key);
 
-        // If already claimed by someone else, let them know and still redirect to Meet
+        // Already claimed — show info and link to that room
         if (data && data.accepted) {
+            const existingRoom = data.meetLink || FALLBACK_MEET;
             const msg = `<html><body style="font-family:sans-serif;text-align:center;padding:40px">
                 <h2>✅ Already claimed</h2>
                 <p>This call was accepted by <strong>${data.acceptedBy}</strong>.</p>
-                <p><a href="${MEET_LINK}" style="color:#bd1e2e">Join Meet anyway →</a></p>
+                <p><a href="${existingRoom}" style="color:#bd1e2e">Join Meet anyway →</a></p>
             </body></html>`;
             res.setHeader('Content-Type', 'text/html');
             return res.status(200).send(msg);
         }
 
-        // Mark as accepted — preserve existing GPS fields
+        // Create a fresh Meet room via Calendar API
+        const newRoom = await createMeetRoom(name);
+        if (newRoom) meetLink = newRoom;
+
+        // Mark session as accepted and store the Meet link
         await kv.set(key, {
             ...(data || {}),
             accepted: true,
-            acceptedBy: name
+            acceptedBy: name,
+            meetLink,
         }, { ex: 3600 });
 
         // Notify the team via Google Chat
         const webhookUrl = process.env.CHAT_WEBHOOK_URL;
         if (webhookUrl) {
-            const payload = {
-                text: `✅ *${name} has accepted this evaluation call* — no action needed from others.\nThey're joining Meet now.`
-            };
             await fetch(webhookUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({
+                    text: `✅ *${name} has accepted this evaluation call* — no action needed from others.\nThey're joining Meet now.`
+                })
             }).catch(() => { });
         }
 
-        // Create a 30-min Google Calendar event so Otter auto-joins this specific call
-        await createCalendarEvent(req, name).catch((err) => {
-            console.warn('Calendar event creation failed (non-fatal):', err.message);
-        });
-
     } catch (err) {
         console.error('Accept error:', err);
-        // Non-fatal — still redirect to Meet even if KV/Calendar is down
+        // Non-fatal — still redirect to fallback Meet room
     }
 
-    // Send evaluator straight into the call
-    res.writeHead(302, { Location: MEET_LINK });
+    // Send evaluator into their fresh Meet room
+    res.writeHead(302, { Location: meetLink });
     res.end();
 }
 
 /**
- * Creates a 30-minute Google Calendar event with the Meet link.
- * Otter's OtterPilot detects this and auto-joins within ~60 seconds.
+ * Creates a new Google Meet room via Calendar API (conferenceData.createRequest).
+ * Returns the hangoutLink (e.g. https://meet.google.com/abc-defg-hij) or null on failure.
  */
-async function createCalendarEvent(req, evaluatorName) {
+async function createMeetRoom(evaluatorName) {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
     if (!clientId || !clientSecret) {
-        console.warn('GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET not set — skipping calendar event');
-        return;
+        console.warn('Google credentials not set — using fallback Meet room');
+        return null;
     }
 
-    // Get stored refresh token from KV
     const refreshToken = await kv.get('google:calendar:refresh_token');
     if (!refreshToken) {
-        console.warn('No Google refresh token in KV. Visit /api/auth to authorize.');
-        return;
+        console.warn('No refresh token in KV — visit /api/auth to authorize');
+        return null;
     }
 
-    // Exchange refresh token for a fresh access token
+    // Get a fresh access token
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -109,28 +112,30 @@ async function createCalendarEvent(req, evaluatorName) {
 
     const tokenData = await tokenRes.json();
     if (!tokenData.access_token) {
-        throw new Error(`Token refresh failed: ${JSON.stringify(tokenData)}`);
+        console.error('Token refresh failed:', tokenData);
+        return null;
     }
 
-    // Build event — starts 1 min from now (gives Otter time to process the invite)
+    // Build a 30-min event starting now with a brand-new Meet room
     const now = new Date();
-    const start = new Date(now.getTime() + 1 * 60 * 1000);
-    const end = new Date(now.getTime() + 31 * 60 * 1000);
+    const end = new Date(now.getTime() + 30 * 60 * 1000);
 
     const event = {
         summary: `KO Evaluation — ${evaluatorName}`,
-        description: `Live evaluation call accepted by ${evaluatorName}.\n\nJoin here: ${MEET_LINK}`,
-        start: { dateTime: start.toISOString(), timeZone: 'America/Chicago' },
+        description: `Live evaluation call accepted by ${evaluatorName}. Auto-recorded via Otter.`,
+        start: { dateTime: now.toISOString(), timeZone: 'America/Chicago' },
         end: { dateTime: end.toISOString(), timeZone: 'America/Chicago' },
-        location: MEET_LINK,
-        attendees: [
-            { email: 'automations@goforko.com' },
-            { email: 'notetaker@otter.ai' }
-        ],
+        conferenceData: {
+            createRequest: {
+                requestId: `ko-eval-${Date.now()}`,  // must be unique per request
+                conferenceSolutionKey: { type: 'hangoutsMeet' },
+            }
+        },
     };
 
+    // conferenceDataVersion=1 is required for conferenceData.createRequest to work
     const calRes = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events?sendUpdates=externalOnly`,
+        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events?conferenceDataVersion=1&sendUpdates=none`,
         {
             method: 'POST',
             headers: {
@@ -142,9 +147,19 @@ async function createCalendarEvent(req, evaluatorName) {
     );
 
     if (!calRes.ok) {
-        const err = await calRes.text();
-        throw new Error(`Calendar API error: ${err}`);
+        const errText = await calRes.text();
+        console.error('Calendar API error:', errText);
+        return null;
     }
 
-    console.log(`Calendar event created for ${evaluatorName}'s evaluation call.`);
+    const created = await calRes.json();
+    const hangoutLink = created.hangoutLink || created.conferenceData?.entryPoints?.[0]?.uri;
+
+    if (hangoutLink) {
+        console.log(`New Meet room created for ${evaluatorName}: ${hangoutLink}`);
+    } else {
+        console.warn('Calendar event created but no hangoutLink returned:', JSON.stringify(created));
+    }
+
+    return hangoutLink || null;
 }
