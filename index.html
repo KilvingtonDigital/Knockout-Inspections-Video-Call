@@ -868,6 +868,57 @@
             opacity: 0.6;
             transition: opacity 0.3s;
         }
+
+        /* ─── Customer info fields ──────────────────────────── */
+        .info-fields {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .info-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .info-field label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .info-field input {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 0.9rem;
+            color: #1a1a2e;
+            background: #f8fafc;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+
+        .info-field input:focus {
+            border-color: var(--red);
+            background: #fff;
+        }
+
+        .info-field input.field-error {
+            border-color: var(--red);
+            background: #fff5f5;
+        }
+
+        .info-fields-note {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-bottom: 14px;
+        }
     </style>
 </head>
 
@@ -926,6 +977,25 @@
             </div>
         </div>
         <div class="card-body">
+
+            <!-- Customer info fields (required before GPS) -->
+            <div class="info-fields" id="info-fields">
+                <div class="info-field">
+                    <label for="field-address">Project Street Address *</label>
+                    <input type="text" id="field-address" placeholder="123 Main St, City, State"
+                        autocomplete="street-address" />
+                </div>
+                <div class="info-field">
+                    <label for="field-company">Company Name *</label>
+                    <input type="text" id="field-company" placeholder="ABC Roofing LLC" autocomplete="organization" />
+                </div>
+                <div class="info-field">
+                    <label for="field-phone">Phone Number *</label>
+                    <input type="tel" id="field-phone" placeholder="(555) 123-4567" autocomplete="tel" />
+                </div>
+            </div>
+            <p class="info-fields-note">* Required before sharing your location</p>
+
             <button id="gps-share-btn" onclick="requestLocation()">
                 <svg viewBox="0 0 24 24">
                     <path
@@ -1237,7 +1307,10 @@
                     lng: capturedLng,
                     acc: capturedAcc,
                     time: now,
-                    date: dateStr
+                    date: dateStr,
+                    address: (document.getElementById('field-address')?.value || '').trim(),
+                    company: (document.getElementById('field-company')?.value || '').trim(),
+                    phone: (document.getElementById('field-phone')?.value || '').trim(),
                 })
             }).catch(() => { /* silent */ });
         }
@@ -1258,6 +1331,21 @@
             const errDiv = document.getElementById('gps-error');
 
             errDiv.style.display = 'none';
+
+            // Validate customer info fields first
+            const address = (document.getElementById('field-address')?.value || '').trim();
+            const company = (document.getElementById('field-company')?.value || '').trim();
+            const phone = (document.getElementById('field-phone')?.value || '').trim();
+            let hasError = false;
+            ['field-address', 'field-company', 'field-phone'].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el.value.trim()) { el.classList.add('field-error'); hasError = true; }
+                else el.classList.remove('field-error');
+            });
+            if (hasError) {
+                showGpsError('Please fill in your Project Address, Company Name, and Phone Number first.');
+                return;
+            }
 
             if (!navigator.geolocation) {
                 showGpsError("Your browser doesn't support location sharing. Please open this link in Chrome or Safari.");

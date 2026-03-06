@@ -36,7 +36,7 @@ export default async function handler(req, res) {
     const host = req.headers['x-forwarded-host'] || req.headers.host;
     const BASE_URL = `${proto}://${host}`;
 
-    const { sessionId, lat, lng, acc, time, date } = req.body || {};
+    const { sessionId, lat, lng, acc, time, date, address, company, phone } = req.body || {};
 
     // ── Store session in Redis ──────────────────────────────────
     if (sessionId) {
@@ -48,7 +48,10 @@ export default async function handler(req, res) {
                 lng: lng || null,
                 acc: acc || null,
                 time: time || null,
-                date: date || null
+                date: date || null,
+                address: address || null,
+                company: company || null,
+                phone: phone || null,
             }, { ex: 3600 }); // 1-hour TTL
         } catch (err) {
             console.error('Redis store error:', err.message);
@@ -109,6 +112,34 @@ export default async function handler(req, res) {
                     imageType: 'CIRCLE'
                 },
                 sections: [
+                    // Customer details section (shown first so evaluators know who's calling)
+                    {
+                        header: '🏢 Customer Details',
+                        collapsible: false,
+                        widgets: [
+                            {
+                                decoratedText: {
+                                    topLabel: 'Company',
+                                    text: `<b>${company || 'Not provided'}</b>`,
+                                    startIcon: { knownIcon: 'BUILDING_STORE' }
+                                }
+                            },
+                            {
+                                decoratedText: {
+                                    topLabel: 'Project Address',
+                                    text: address || 'Not provided',
+                                    startIcon: { knownIcon: 'MAP_PIN' }
+                                }
+                            },
+                            {
+                                decoratedText: {
+                                    topLabel: 'Phone',
+                                    text: phone || 'Not provided',
+                                    startIcon: { knownIcon: 'PHONE' }
+                                }
+                            }
+                        ]
+                    },
                     {
                         header: '📍 Customer Location',
                         collapsible: false,
