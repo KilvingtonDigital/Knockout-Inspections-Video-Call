@@ -5,7 +5,10 @@
  * Run this once to get a refresh token — then it's fully automatic.
  */
 
-const SCOPES = ['https://www.googleapis.com/auth/calendar.events'];
+const SCOPES = [
+    'https://www.googleapis.com/auth/calendar.events',
+    'https://www.googleapis.com/auth/meetings.space.created',
+];
 
 export default function handler(req, res) {
     const clientId = process.env.GOOGLE_CLIENT_ID;
