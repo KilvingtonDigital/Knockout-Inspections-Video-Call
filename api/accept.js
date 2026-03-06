@@ -11,7 +11,7 @@ import { kv } from '@vercel/kv';
 
 const MEET_LINK = 'https://meet.google.com/vnz-jgvp-ywe';
 const INSPECTORS = ['Ricky', 'Hunter', 'Nate'];
-const CALENDAR_ID = 'ricky@goforko.com'; // Calendar to create events on
+const CALENDAR_ID = 'automations@goforko.com'; // Dedicated automation account calendar
 
 export default async function handler(req, res) {
     const { session, name } = req.query;
