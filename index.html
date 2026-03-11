@@ -1433,12 +1433,14 @@
             if (err.code === err.PERMISSION_DENIED || err.code === err.POSITION_UNAVAILABLE) {
                 if (isIphone) {
                     msg = `<strong>📍 Location blocked on iPhone — here's how to fix it:</strong><br><br>
-<strong>Step 1:</strong> Close this page and open your iPhone <strong>Settings</strong> app (the gray gear icon).<br>
-<strong>Step 2:</strong> Scroll down and tap <strong>Privacy & Security</strong>.<br>
-<strong>Step 3:</strong> Tap <strong>Location Services</strong> — make sure it's toggled <strong>ON</strong> (green).<br>
-<strong>Step 4:</strong> Scroll down to find <strong>Safari</strong> (or Chrome if that's your browser) → tap it → select <strong>"While Using the App"</strong>.<br>
-<strong>Step 5:</strong> Come back to this page and tap <strong>Share My Location</strong> again.<br><br>
-<em>Still not working? Make sure you're using Safari or Chrome — other browsers may not support location sharing.</em>`;
+<strong>Quick fix (try this first):</strong><br>
+In Safari, look at the address bar at the top → tap the <strong>AA</strong> (or 🔒 lock icon) → tap <strong>Website Settings</strong> → change <strong>Location</strong> to <strong>"Allow"</strong> → come back and tap <strong>Share My Location</strong> again.<br><br>
+<strong>If that doesn't work — full fix:</strong><br>
+<strong>Step 1:</strong> Open your iPhone <strong>Settings</strong> app (the gray gear icon).<br>
+<strong>Step 2:</strong> Tap <strong>Privacy &amp; Security</strong> → <strong>Location Services</strong> — make sure it's toggled <strong>ON</strong> (green).<br>
+<strong>Step 3:</strong> Scroll down to <strong>Safari</strong> → tap it → select <strong>"While Using the App"</strong>.<br>
+<strong>Step 4:</strong> Return to this page and tap <strong>Share My Location</strong> again.<br><br>
+<em>Must be using Safari or Chrome — other browsers may not support location sharing.</em>`;
                 } else if (isAndroid) {
                     msg = `<strong>📍 Location blocked on Android — here's how to fix it:</strong><br><br>
 <strong>Step 1:</strong> Tap the <strong>three dots</strong> (⋮) in the top-right corner of your browser.<br>
