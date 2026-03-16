@@ -12,7 +12,7 @@
 
 import { kv } from '@vercel/kv';
 
-const EVALUATORS = ['Ricky', 'Hunter', 'Nate'];
+const EVALUATORS = ['Ricky', 'Hunter', 'Nate', 'Erica'];
 const FALLBACK_MEET = 'https://meet.google.com/vnz-jgvp-ywe';
 
 export default async function handler(req, res) {

@@ -4,7 +4,7 @@
  * 1. Stores session data (GPS, timestamp) in Upstash Redis
  * 2. Sends a rich Google Chat Card with:
  *    - GPS coordinates + accuracy + Maps link
- *    - Per-inspector Accept buttons (Ricky / Hunter / Nate)
+ *    - Per-inspector Accept buttons (Ricky / Hunter / Nate / Erica)
  *    - A Pass button that re-alerts the team
  *
  * Payload received from frontend:
@@ -19,7 +19,7 @@
 import { kv } from '@vercel/kv';
 
 const MEET_LINK = 'https://meet.google.com/vnz-jgvp-ywe';
-const INSPECTORS = ['Ricky', 'Hunter', 'Nate'];
+const INSPECTORS = ['Ricky', 'Hunter', 'Nate', 'Erica'];
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {

@@ -7,7 +7,7 @@
 import { kv } from '@vercel/kv';
 
 const MEET_LINK = 'https://meet.google.com/vnz-jgvp-ywe';
-const INSPECTORS = ['Ricky', 'Hunter', 'Nate'];
+const INSPECTORS = ['Ricky', 'Hunter', 'Nate', 'Erica'];
 
 export default async function handler(req, res) {
     const { session } = req.query;
