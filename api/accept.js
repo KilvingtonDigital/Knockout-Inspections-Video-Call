@@ -13,7 +13,6 @@
 import { kv } from '@vercel/kv';
 
 const EVALUATORS = ['Ricky', 'Hunter', 'Nate', 'Erica'];
-const FALLBACK_MEET = 'https://meet.google.com/vnz-jgvp-ywe';
 
 export default async function handler(req, res) {
     const { session, name } = req.query;
@@ -21,14 +20,14 @@ export default async function handler(req, res) {
     if (!session || !name) return res.status(400).send('Missing session or name.');
     if (!EVALUATORS.includes(name)) return res.status(400).send('Unknown evaluator name.');
 
-    let meetLink = FALLBACK_MEET;
+    let meetLink = null;
 
     try {
         const key = `session:${session}`;
         const data = await kv.get(key);
 
         if (data && data.accepted) {
-            const existingRoom = data.meetLink || FALLBACK_MEET;
+            const existingRoom = data.meetLink;
             res.setHeader('Content-Type', 'text/html');
             return res.status(200).send(`<html><body style="font-family:sans-serif;text-align:center;padding:40px">
                 <h2>✅ Already claimed</h2>
@@ -97,8 +96,11 @@ export default async function handler(req, res) {
     res.end();
 }
 
-/** Gets a fresh access token from the stored refresh token */
+/** Gets a cached access token, or refreshes if needed */
 async function getAccessToken() {
+    const cachedToken = await kv.get('google:calendar:access_token');
+    if (cachedToken) return cachedToken;
+
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     if (!clientId || !clientSecret) { console.warn('Google creds not set'); return null; }
@@ -116,6 +118,10 @@ async function getAccessToken() {
     });
     const tokenData = await tokenRes.json();
     if (!tokenData.access_token) { console.error('Token refresh failed:', tokenData); return null; }
+    
+    // Cache the access token for 50 minutes (Google tokens expire in 60 mins)
+    await kv.set('google:calendar:access_token', tokenData.access_token, { ex: 3000 });
+    
     return tokenData.access_token;
 }
 
