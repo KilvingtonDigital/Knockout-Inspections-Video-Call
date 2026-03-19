@@ -62,7 +62,23 @@ export default async function handler(req, res) {
                         ? `❌ failed — ${ffError}`
                         : '✅ bot dispatched — joins in ~30s';
                 }
+            } else {
+                // Space creation failed
+                res.setHeader('Content-Type', 'text/html');
+                return res.status(500).send(`<html><body style="font-family:sans-serif;text-align:center;padding:40px">
+                    <h2>⚠️ Room Creation Failed</h2>
+                    <p>Google's API returned an error: ${spaceError || 'Unknown'}</p>
+                    <p><a href="/api/accept?session=${session}&name=${encodeURIComponent(name)}" style="color:#bd1e2e;font-weight:bold;font-size:18px;">Tap here to try again 🔄</a></p>
+                </body></html>`);
             }
+        } else {
+            // Token failed
+            res.setHeader('Content-Type', 'text/html');
+            return res.status(500).send(`<html><body style="font-family:sans-serif;text-align:center;padding:40px">
+                <h2>⚠️ Authentication Failed</h2>
+                <p>Could not get Google Access Token.</p>
+                <p><a href="/api/accept?session=${session}&name=${encodeURIComponent(name)}" style="color:#bd1e2e;font-weight:bold;font-size:18px;">Tap here to try again 🔄</a></p>
+            </body></html>`);
         }
 
         // Store op log for /api/debug (expires 2 hrs)
